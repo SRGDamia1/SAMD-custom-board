@@ -153,7 +153,7 @@
 #define COLOR_START 0x000040
 #define COLOR_USB 0x004000
 #define COLOR_UART 0x404000
-#define COLOR_LEAVE 0x400040
+#define COLOR_LEAVE 0x000000
 #endif
 
 /*

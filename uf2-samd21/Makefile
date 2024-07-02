@@ -1,5 +1,4 @@
-BOARD=yozh
-VERSION=1.0.0
+BOARD=zero
 -include Makefile.user
 include boards/$(BOARD)/board.mk
 CC=arm-none-eabi-gcc
@@ -27,7 +26,7 @@ CFLAGS = $(COMMON_FLAGS) \
 -D__$(CHIP_VARIANT)__ \
 $(WFLAGS)
 
-UF2_VERSION_BASE = $(VERSION)
+UF2_VERSION_BASE = $(shell git describe --dirty --always --tags)
 
 ifeq ($(CHIP_FAMILY), samd21)
 LINKER_SCRIPT=scripts/samd21j18a.ld
@@ -97,19 +96,63 @@ EXECUTABLE=$(BUILD_PATH)/$(NAME).bin
 SELF_EXECUTABLE=$(BUILD_PATH)/update-$(NAME).uf2
 SELF_EXECUTABLE_INO=$(BUILD_PATH)/update-$(NAME).ino
 
+SUBMODULES = lib/uf2/README.md
 
+all: submodules dirs $(EXECUTABLE) $(SELF_EXECUTABLE)
+submodules: $(SUBMODULES)
 
-all:  dirs $(EXECUTABLE) $(SELF_EXECUTABLE)
+r: run
+b: burn
+l: logs
 
+burn: all
+	node scripts/dbgtool.js fuses
+	node scripts/dbgtool.js $(BUILD_PATH)/$(NAME).bin
 
+run: burn wait logs
 
+# This currently only works on macOS with a BMP debugger attached.
+# It's meant to flash the bootloader in a loop.
+BMP = $(shell ls -1 /dev/cu.usbmodem* | head -1)
+BMP_ARGS = --nx -ex "set mem inaccessible-by-default off" -ex "set confirm off" -ex "target extended-remote $(BMP)" -ex "mon tpwr enable" -ex "mon swdp_scan" -ex "attach 1"
+GDB = arm-none-eabi-gdb
 
+bmp-flash: $(BUILD_PATH)/$(NAME).bin
+	@test "X$(BMP)" != "X"
+	$(GDB) $(BMP_ARGS) -ex "load" -ex "quit" $(BUILD_PATH)/$(NAME).elf | tee build/flash.log
+	@grep -q "Transfer rate" build/flash.log
 
+bmp-flashone:
+	while : ; do $(MAKE) bmp-flash && exit 0 ; sleep 1 ; done
+	afplay /System/Library/PrivateFrameworks/ScreenReader.framework/Versions/A/Resources/Sounds/Error.aiff
 
+bmp-loop:
+	while : ; do $(MAKE) bmp-flashone ; sleep 5 ; done
+
+bmp-gdb: $(BUILD_PATH)/$(NAME).bin
+	$(GDB) $(BMP_ARGS) $(BUILD_PATH)/$(NAME).elf
+
+$(BUILD_PATH)/flash.jlink: $(BUILD_PATH)/$(NAME).bin
+	echo " \n\
+r \n\
+h \n\
+loadbin \"$(BUILD_PATH)/$(NAME).bin\", 0x0 \n\
+verifybin \"$(BUILD_PATH)/$(NAME).bin\", 0x0 \n\
+r \n\
+qc \n\
+" > $(BUILD_PATH)/flash.jlink
+
+jlink-flash: $(BUILD_PATH)/$(NAME).bin $(BUILD_PATH)/flash.jlink
+	JLinkExe -if swd -device AT$(CHIP_VARIANT) -speed 4000 -CommanderScript $(BUILD_PATH)/flash.jlink
 
 wait:
 	sleep 5
 
+logs:
+	node scripts/dbgtool.js $(BUILD_PATH)/$(NAME).map
+
+selflogs:
+	node scripts/dbgtool.js $(BUILD_PATH)/update-$(NAME).map
 
 dirs:
 	@echo "Building $(BOARD)"
@@ -161,3 +204,30 @@ applet0: $(BUILD_PATH)/flash.asmdump
 
 applet1: $(BUILD_PATH)/utils.asmdump
 	node scripts/genapplet.js $< resetIntoApp
+
+drop-board: all
+	@echo "*** Copy files for $(BOARD)"
+	mkdir -p build/drop
+	rm -rf build/drop/$(BOARD)
+	mkdir -p build/drop/$(BOARD)
+	cp $(SELF_EXECUTABLE) build/drop/$(BOARD)/
+	cp $(EXECUTABLE) build/drop/$(BOARD)/
+# .ino works only for SAMD21 right now; suppress for SAMD51
+ifeq ($(CHIP_FAMILY),samd21)
+	cp $(SELF_EXECUTABLE_INO) build/drop/$(BOARD)/
+	cp boards/$(BOARD)/board_config.h build/drop/$(BOARD)/
+endif
+
+drop-pkg:
+	mv build/drop build/uf2-samdx1-$(UF2_VERSION_BASE)
+	cp bin-README.md build/uf2-samdx1-$(UF2_VERSION_BASE)/README.md
+	cd build; 7z a uf2-samdx1-$(UF2_VERSION_BASE).zip uf2-samdx1-$(UF2_VERSION_BASE)
+	rm -rf build/uf2-samdx1-$(UF2_VERSION_BASE)
+
+all-boards:
+	for f in `cd boards; ls` ; do "$(MAKE)" BOARD=$$f drop-board || break -1; done
+
+drop: all-boards drop-pkg
+
+$(SUBMODULES):
+	git submodule update --init --recursive

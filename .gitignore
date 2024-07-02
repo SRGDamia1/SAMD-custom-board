@@ -31,14 +31,15 @@
 *.out
 *.app
 
-# Build directory 
+# Build directory
 
 build*
 
-# private 
+# private
 
 private*
 
 # MacOS
 
 .DS_store
+.history/*
