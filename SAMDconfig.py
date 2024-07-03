@@ -57,7 +57,12 @@ class SAMDconfig:
             self.d["extra_flags"] = "-DARDUINO_SAMD_ZERO -DARM_MATH_CM0PLUS"
             self.d["openocdscript"] = "scripts/openocd/daplink_samd21.cfg"
         elif self.is_samd51:
-            self.d["flash_size"] = 507904  # SAMD51P20A and SAMD51J20A has 1032192
+            # SAMD51J20A, SAMD51P20A, and SAMD51N20A have 1032192 flash size (1024kB program memory size)
+            if self.chip_variant in ["SAMD51J20A", "SAMD51P20A", "SAMD51N20A"]:
+                self.d["flash_size"] = 1032192
+            # other SAMD51's have 507904flash size (512kB program memory size)
+            else:
+                self.d["flash_size"] = 507904
             self.d["data_size"] = 0
             self.d["offset"] = "0x4000"
             self.d["build_mcu"] = "cortex-m4"
@@ -69,11 +74,7 @@ class SAMDconfig:
         else:
             raise RuntimeError("Invalid MCU family")
 
-        # fix flash size:
-        if self.chip_variant == "SAMD51P20A" or self.chip_variant == "SAMD51J20A":
-            self.d["flash_size"] = 1032192
-
-        # add extra GCC  flags
+        # add extra GCC flags
         self.d["extra_flags"] += f" -D__{self.chip_variant}__"
         if self.d["crystalless"]:
             self.d["extra_flags"] += " -DCRYSTALLESS"
@@ -102,7 +103,7 @@ class SAMDconfig:
             print("Removing old build directory")
             shutil.rmtree(dirname)
         shutil.copytree("PACKAGE_TEMPLATE", self.package_directory)
-        shutil.copytree("uf2-samd21", f"{self.build_directory}/uf2-samd21")
+        shutil.copytree("uf2-samdx1", f"{self.build_directory}/uf2-samdx1")
         # now, select which board template to use - thye have different link scripts
         variants_dir = self.package_directory + "/variants"
         board_variant = f"{variants_dir}/{self.name}"
@@ -112,12 +113,13 @@ class SAMDconfig:
             shutil.rmtree(variants_dir + "/TEMPLATE_SAMD51")
             shutil.rmtree(variants_dir + "/TEMPLATE_SAMD51P20A")
 
-        elif self.chip_variant == "SAMD51P20A":
+        # SAMD boards with 1024kB Flash/256kB SRAM
+        elif self.chip_variant in ["SAMD51J20A", "SAMD51P20A", "SAMD51N20A"]:
             shutil.move(variants_dir + "/TEMPLATE_SAMD51P20A", board_variant)
             shutil.rmtree(variants_dir + "/TEMPLATE_SAMD51")
             shutil.rmtree(variants_dir + "/TEMPLATE_SAMD21")
+        # Remaining SAMD boards with 512kB Flash/192kB SRAM
         else:
-            # SAMD51, but not SAMD51P20A
             shutil.move(variants_dir + "/TEMPLATE_SAMD51", board_variant)
             shutil.rmtree(variants_dir + "/TEMPLATE_SAMD21")
             shutil.rmtree(variants_dir + "/TEMPLATE_SAMD51P20A")
@@ -267,7 +269,7 @@ class SAMDconfig:
     def build_bootloader(self):
         # first, get paths
         new_env = self.get_paths()
-        os.chdir("build/uf2-samd21")
+        os.chdir("build/uf2-samdx1")
         # run make to build bootloader
         print("Starting GNU make...")
         with open("bootloader_build_log.txt", "w", encoding="UTF-8") as logfile:
@@ -282,7 +284,7 @@ class SAMDconfig:
 
         # copy built bootloader
         os.chdir("../..")
-        bootloader_dir = f"{self.build_directory}/uf2-samd21/build/{self.name}"
+        bootloader_dir = f"{self.build_directory}/uf2-samdx1/build/{self.name}"
         bootloader_basename = f"bootloader-{self.name}-{self.version}"
         return (bootloader_dir, bootloader_basename)
 
