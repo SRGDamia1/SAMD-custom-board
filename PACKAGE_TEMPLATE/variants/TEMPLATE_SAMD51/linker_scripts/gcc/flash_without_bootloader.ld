@@ -20,8 +20,12 @@
  * Need modifying for a specific board.
  *   FLASH.ORIGIN: starting address of flash
  *   FLASH.LENGTH: length of flash
+ *       0x00100000 = 1048576
+ *       0x00080000 = 524288
  *   RAM.ORIGIN: starting address of RAM bank 0
  *   RAM.LENGTH: length of RAM bank 0
+ *       0x00040000 = 262144
+ *       0x00030000 = 196608
  */
 MEMORY
 {
