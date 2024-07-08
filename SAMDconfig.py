@@ -6,6 +6,7 @@ Main class to keep configuration data for SAMD board
 
 import os
 import shutil
+import stat
 import configparser
 import subprocess
 import glob
@@ -13,6 +14,15 @@ from string import Template
 import hashlib
 import json
 from datetime import date
+import requests
+
+
+# Cloning the uf2 directory as part of the build creates read-only files which rmtree cannot
+# delete without a helper.
+def remove_readonly(func, path, _):
+    "Clear the readonly bit and reattempt the removal"
+    os.chmod(path, stat.S_IWRITE)
+    func(path)
 
 
 class SAMDconfig:
@@ -99,12 +109,44 @@ class SAMDconfig:
     def setup_build_directory(self, dirname):
         self.build_directory = dirname
         self.package_directory = f"{dirname}/{self.version}"
+        # remove old build directory, if it exists
         if os.path.exists(dirname):
             print("Removing old build directory")
-            shutil.rmtree(dirname)
+            shutil.rmtree(dirname, onerror=remove_readonly)
+        # copy the template directory into the build directory
         shutil.copytree("PACKAGE_TEMPLATE", self.package_directory)
-        shutil.copytree("uf2-samdx1", f"{self.build_directory}/uf2-samdx1")
-        # now, select which board template to use - thye have different link scripts
+
+        # clone the latest version of the uf2-samdx1 repo into the build directory
+        # shutil.copytree("uf2-samdx1", f"{self.build_directory}/uf2-samdx1")
+        print("Checking the tag of the latest release of Adafruit's uf2 repo...")
+        response = requests.get(
+            "https://api.github.com/repos/adafruit/uf2-samdx1/releases/latest"
+        )
+        latest_release_tag = response.json()["tag_name"]
+        self.d["uf2_version_tag"] = latest_release_tag
+        print(
+            f"The latest release of Adafruit's uf2 repo is tag {latest_release_tag}, published {response.json()['published_at']}"
+        )
+        print("Cloning Adafruit's uf2 repo...")
+        with open(
+            f"{self.build_directory}/bootloader_build_log.txt", "w", encoding="UTF-8"
+        ) as logfile:
+            command = f"git clone --depth 1 --branch {latest_release_tag} https://github.com/adafruit/uf2-samdx1.git {self.build_directory}/uf2-samdx1"
+            git_process = subprocess.run(
+                command,
+                shell=True,
+                stdout=logfile,
+                stderr=subprocess.STDOUT,
+                text=True,
+            )
+            if git_process.returncode:
+                print(
+                    "Cloning Adafruit uf2 repo failed. Please see the log file for details"
+                )
+            else:
+                print("Successfully cloned latest Adafruit uf2 repo")
+
+        # now, select which board template to use - they have different link scripts
         variants_dir = self.package_directory + "/variants"
         board_variant = f"{variants_dir}/{self.name}"
         if self.chip_family == "SAMD21":
@@ -172,12 +214,14 @@ class SAMDconfig:
 
     # creates board.mk file in given directory
     def write_board_mk(self, dest_directory):
+        print(f"Writing board.mk file to {dest_directory}/board.mk")
         with open(f"{dest_directory}/board.mk", "w", encoding="UTF-8") as board_mk:
             board_mk.write("CHIP_FAMILY = " + self.d["chip_family"].lower() + "\n")
             board_mk.write("CHIP_VARIANT = " + self.d["chip_variant"] + "\n")
 
     # creates board_config.h gile in given directory
     def write_board_config(self, dest_directory):
+        print(f"Writing board_config.h file to {dest_directory}/board_config.h")
         with open(
             f"{dest_directory}/board_config.h", "w", encoding="UTF-8"
         ) as board_config:
@@ -259,23 +303,58 @@ class SAMDconfig:
         print(f"Found GCC compiler at {gcc_path}")
         # add the paths to PATH env variable
         if "make_path" in self.d:
+            if not os.path.exists(os.path.join(self.d["make_path"], "make.exe")):
+                raise RuntimeError("Couldn't find make in the make_path directory!")
             new_env["PATH"] = os.pathsep.join(
                 [new_env["PATH"], gcc_path, self.d["make_path"]]
             )
+            print("Found GNU Make in specified make_path")
         else:
             new_env["PATH"] = os.pathsep.join([new_env["PATH"], gcc_path])
         return new_env
+
+    def update_make_for_windows(self):
+        print("Tweaking the make file for Windows")
+        replacements = {
+            # fix the mkdir to the windows version (no -p)
+            "-@mkdir -p $(BUILD_PATH)": 'if not exist "$(BUILD_PATH)" mkdir "$(BUILD_PATH)"',
+            # fix quotes around the echo to the version base file
+            'echo "#define UF2_VERSION_BASE \\"$(UF2_VERSION_BASE)\\""> $@': 'echo #define UF2_VERSION_BASE "$(UF2_VERSION_BASE)"> $@',
+            # call python as python not as python 3
+            "python3 ": "python ",
+            # because we've just modified this make file, the repo will be dirty; ignore this dirt
+            "git describe --dirty --always --tags": "git describe --always --tags",
+        }
+
+        os.rename("Makefile", "archive_Makefile")
+        with open("archive_Makefile") as infile, open("Makefile", "w") as outfile:
+            i = 1
+            for line in infile:
+                # print(i, line)
+                for src, target in replacements.items():
+                    # print(src)
+                    # print(src in line)
+                    line = line.replace(src, target)
+                outfile.write(line)
+                i += 1
 
     def build_bootloader(self):
         # first, get paths
         new_env = self.get_paths()
         os.chdir("build/uf2-samdx1")
+        if self.d["build_os"].lower() == "windows":
+            self.update_make_for_windows()
         # run make to build bootloader
         print("Starting GNU make...")
-        with open("bootloader_build_log.txt", "w", encoding="UTF-8") as logfile:
+        with open("../bootloader_build_log.txt", "a", encoding="UTF-8") as logfile:
             command = f"make BOARD={self.name} VERSION={self.version}"
             make_process = subprocess.run(
-                command, shell=True, env=new_env, stdout=logfile, text=True
+                command,
+                shell=True,
+                env=new_env,
+                stdout=logfile,
+                stderr=subprocess.STDOUT,
+                text=True,
             )
             if make_process.returncode:
                 print("Making bootloader failed. Please see the log file for details")
@@ -285,7 +364,7 @@ class SAMDconfig:
         # copy built bootloader
         os.chdir("../..")
         bootloader_dir = f"{self.build_directory}/uf2-samdx1/build/{self.name}"
-        bootloader_basename = f"bootloader-{self.name}-{self.version}"
+        bootloader_basename = f"bootloader-{self.name}-{self.d['uf2_version_tag']}"
         return (bootloader_dir, bootloader_basename)
 
     # compress already constructed package directory into a zip archive and
@@ -346,3 +425,8 @@ class SAMDconfig:
         )
         with open(indexfile_name, "w", encoding="UTF-8") as indexfile:
             json.dump(packages, indexfile, indent=2)
+
+    def clean_build_directory(self):
+        # remove cloned repo
+        if os.path.exists(f"{self.build_directory}/uf2-samdx1"):
+            shutil.rmtree(f"{self.build_directory}/uf2-samdx1", onerror=remove_readonly)
