@@ -43,3 +43,4 @@ private*
 
 .DS_store
 .history/*
+__pycache__/*
