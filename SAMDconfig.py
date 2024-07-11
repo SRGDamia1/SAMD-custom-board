@@ -86,7 +86,7 @@ class SAMDconfig:
 
         # add extra GCC flags
         self.d["extra_flags"] += f" -D__{self.chip_variant}__"
-        if self.d["crystalless"]:
+        if "crystalless" in self.d.keys() and self.d["crystalless"] != "0":
             self.d["extra_flags"] += " -DCRYSTALLESS"
 
         # add extra extra GCC flags
