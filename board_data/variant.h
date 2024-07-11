@@ -253,9 +253,9 @@ extern "C"
 /*
  * USB
  */
-// #define PIN_USB_HOST_ENABLE (77) // Not in use on Stonefly
-#define PIN_USB_DM (76) // PA24
-#define PIN_USB_DP (77) // PA25
+#define PIN_USB_HOST_ENABLE (79) // Not in use on Stonefly, but must be defined
+#define PIN_USB_DM (77)          // PA24
+#define PIN_USB_DP (78)          // PA25
 
 /*
  * I2S Interfaces - not used on the Stonefly
