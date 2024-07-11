@@ -38,7 +38,7 @@ class SAMDconfig:
             for key, value in config_file[s].items():
                 self.d[key] = value
 
-        # now, read additional options
+        # now, read additional options for the bootloader
         self.extras = {}
         for s in ["m4_usart_options", "bootloader_extras"]:
             for key, value in config_file[s].items():
@@ -70,7 +70,7 @@ class SAMDconfig:
             # SAMD51J20A, SAMD51P20A, and SAMD51N20A have 1032192 flash size (1024kB program memory size)
             if self.chip_variant in ["SAMD51J20A", "SAMD51P20A", "SAMD51N20A"]:
                 self.d["flash_size"] = 1032192
-            # other SAMD51's have 507904flash size (512kB program memory size)
+            # other SAMD51's have 507904 flash size (512kB program memory size)
             else:
                 self.d["flash_size"] = 507904
             self.d["data_size"] = 0
@@ -88,6 +88,11 @@ class SAMDconfig:
         self.d["extra_flags"] += f" -D__{self.chip_variant}__"
         if self.d["crystalless"]:
             self.d["extra_flags"] += " -DCRYSTALLESS"
+
+        # add extra extra GCC flags
+        self.d["extra_flags"] += (
+            " " + config_file["additional_build_flags"]["extra_extra_flags"]
+        )
 
     def check_missing_values(self, dictionary):
         for key, value in dictionary.items():
