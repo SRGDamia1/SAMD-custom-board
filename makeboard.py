@@ -39,11 +39,16 @@ shutil.copy(f"{bootloader_dir}/{bootloader_basename}.bin", board.build_directory
 # add bootloader filename to dictionary
 board.d["bootloader_filename"] = f"{bootloader_basename}.bin"
 
+# create J-Link and OpenOCD scripts
+print("Writing J-Link and OpenOCD scripts")
+board.write_ocd_scripts()
+
 # create boards.txt, platform.txt, README.md
-print("Writing boards.txt file")
+print("Writing boards.txt, platform.txt, and README.md files")
 board.write_boards_txt()
 
 # compressing directory into zip archive
+print("Compressing the package archive")
 board.package_archive()
 
 # create json file

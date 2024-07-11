@@ -104,12 +104,19 @@ class SAMDconfig:
     # source and destination shoudl be filenames
     def process_file(self, source, destination):
 
+        # open the template file
         with open(source, "r", encoding="UTF-8") as template_file:
             original = template_file.read()
 
+        # make substitutions
         new_data = Template(original).substitute(self.d)
+
+        # write the new file
         with open(destination, "w", encoding="UTF-8") as dest_file:
             dest_file.write(new_data)
+
+        # delete the template file
+        os.remove(source)
 
     def setup_build_directory(self, dirname):
         self.build_directory = dirname
@@ -151,7 +158,8 @@ class SAMDconfig:
             else:
                 print("Successfully cloned latest Adafruit uf2 repo")
 
-        # now, select which board template to use - they have different link scripts
+        # select which board variant template directory to use -
+        # There are different linker scripts depending on the chip and memory size
         variants_dir = self.package_directory + "/variants"
         board_variant = f"{variants_dir}/{self.name}"
         if self.chip_family == "SAMD21":
@@ -162,19 +170,72 @@ class SAMDconfig:
 
         # SAMD boards with 1024kB Flash/256kB SRAM
         elif self.chip_variant in ["SAMD51J20A", "SAMD51P20A", "SAMD51N20A"]:
+            # rename one of template directories and delete two others
             shutil.move(variants_dir + "/TEMPLATE_SAMD51P20A", board_variant)
             shutil.rmtree(variants_dir + "/TEMPLATE_SAMD51")
             shutil.rmtree(variants_dir + "/TEMPLATE_SAMD21")
         # Remaining SAMD boards with 512kB Flash/192kB SRAM
         else:
+            # rename one of template directories and delete two others
             shutil.move(variants_dir + "/TEMPLATE_SAMD51", board_variant)
             shutil.rmtree(variants_dir + "/TEMPLATE_SAMD21")
             shutil.rmtree(variants_dir + "/TEMPLATE_SAMD51P20A")
 
+        # move the hand written variants files into the board variant directory
         shutil.copy2("board_data/variant.cpp", board_variant)
         shutil.copy2("board_data/variant.h", board_variant)
 
+    # creates script files for J-Link and OpenOCD
+    # these are needed to write the bootloader onto the board and for debugging
+    def write_ocd_scripts(self):
+        # Select which script directory to use for J-Link and OpenOCD
+        scripts_dir = self.package_directory + "/scripts"
+        # create the scripts directory
+        os.makedirs(scripts_dir, exist_ok=True)
+        os.makedirs(f"{scripts_dir}/jlink", exist_ok=True)
+        os.makedirs(f"{scripts_dir}/jlink/{self.chip_family.lower()}", exist_ok=True)
+        os.makedirs(f"{scripts_dir}/openocd", exist_ok=True)
+
+        # write the J-Link debug json
+        debug_custom = {
+            "servertype": "jlink",
+            "device": self.chip_variant,
+            "interface": "SWD",
+            "serverpath": "JLinkGDBServer",
+        }
+        jlink_debug_file = (
+            f"{scripts_dir}/jlink/{self.chip_family.lower()}/debug_custom.json"
+        )
+        print(f"Writing J-Link debug profile to {jlink_debug_file}")
+        with open(jlink_debug_file, "w", encoding="UTF-8") as json_file:
+            json.dump(debug_custom, json_file, indent=2)
+
+        jlink_ocd_cfg = f"{scripts_dir}/openocd/jlink_{self.chip_family.lower()}.cfg"
+        daplink_ocd_cfg = (
+            f"{scripts_dir}/openocd/daplink_{self.chip_family.lower()}.cfg"
+        )
+        for file, source in zip(
+            [jlink_ocd_cfg, daplink_ocd_cfg], ["jlink", "cmsis-dap"]
+        ):
+            with open(file, "w", encoding="UTF-8") as ocd_script:
+                # write header
+                ocd_script.write("#\n#  Arduino SAMD51 OpenOCD script.\n#\n\n")
+                # set the interface source
+                ocd_script.write(f"source [find interface/{source}.cfg]\n")
+                # select SWD as the transport
+                ocd_script.write("transport select swd\n\n")
+                # set the chip name
+                ocd_script.write(
+                    f"# chip name\nset CHIPNAME {self.d['chip_variant'].lower()}\n\n"
+                )
+                # set the source script
+                if self.chip_family == "SAMD21":
+                    ocd_script.write("source [find target/at91samdXX.cfg]\n")
+                else:
+                    ocd_script.write("source [find target/atsame5x.cfg]\n")
+
     # creates boards.txt, platform.txt and README.md files, by processing template files in package directory
+    # these are used by the Arduino IDE
     def write_boards_txt(self):
         # if necessary, add entries for cache and speed menus
         self.d["menu_cache"] = ""
@@ -204,27 +265,26 @@ class SAMDconfig:
             f"{self.package_directory}/boards_TEMPLATE.txt",
             f"{self.package_directory}/boards.txt",
         )
-        os.remove(f"{self.package_directory}/boards_TEMPLATE.txt")
         # substitute all values in the template platfotm.txt file
         self.process_file(
             f"{self.package_directory}/platform_TEMPLATE.txt",
             f"{self.package_directory}/platform.txt",
         )
-        os.remove(f"{self.package_directory}/platform_TEMPLATE.txt")
         self.process_file(
             f"{self.package_directory}/README_TEMPLATE.md",
             f"{self.package_directory}/README.md",
         )
-        os.remove(f"{self.package_directory}/README_TEMPLATE.md")
 
     # creates board.mk file in given directory
+    # this is needed to make/build the bootloader
     def write_board_mk(self, dest_directory):
         print(f"Writing board.mk file to {dest_directory}/board.mk")
         with open(f"{dest_directory}/board.mk", "w", encoding="UTF-8") as board_mk:
             board_mk.write("CHIP_FAMILY = " + self.d["chip_family"].lower() + "\n")
             board_mk.write("CHIP_VARIANT = " + self.d["chip_variant"] + "\n")
 
-    # creates board_config.h gile in given directory
+    # creates board_config.h file in given directory
+    # this is for the Arduino IDE
     def write_board_config(self, dest_directory):
         print(f"Writing board_config.h file to {dest_directory}/board_config.h")
         with open(
@@ -278,7 +338,6 @@ class SAMDconfig:
                 )
 
             # now, add extras
-
             for key, value in self.extras.items():
                 padded_key = key.ljust(27).upper()
                 board_config.write(f"#define {padded_key} {value}\n")
