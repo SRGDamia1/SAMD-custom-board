@@ -50,5 +50,9 @@ board.package_archive()
 print("Creating json index file")
 board.write_index_json()
 
+# create platformio board json file
+print("Creating PlatformIO board json file")
+board.write_board_json()
+
 print("Cleaning cloned and copied files from the build directory")
 board.clean_build_directory()

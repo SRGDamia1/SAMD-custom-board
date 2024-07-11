@@ -279,6 +279,84 @@ class SAMDconfig:
                 board_config.write(f"#define {padded_key} {value}\n")
             board_config.write("#endif\n")
 
+    # creates board_name.json file in given directory
+    # this is for PlatformIO
+    def write_board_json(self):
+        board_json = {
+            "name": self.d["board_name_long"],
+            "url": self.d["info_url"],
+            "vendor": self.d["vendor_name_long"],
+            "frameworks": ["arduino"],
+            "build": {
+                "arduino": {"ldscript": "flash_with_bootloader.ld"},
+                "core": "adafruit",
+                "cpu": "cortex-m4",
+                "extra_flags": self.d["extra_flags"].split(" "),
+                "f_cpu": "120000000L",
+                "hwids": [[self.d["usb_vid"], self.d["usb_pid"]]],
+                "mcu": self.chip_variant.lower(),
+                "system": "samd",
+                "usb_product": self.d["board_name_long"],
+                "variant": self.d["board_name"],
+            },
+            "upload": {
+                "disable_flushing": True,
+                "native_usb": True,
+                "protocol": "sam-ba",
+                "protocols": ["sam-ba", "jlink", "atmel-ice"],
+                "require_upload_port": True,
+                "use_1200bps_touch": True,
+                "wait_for_upload_port": True,
+            },
+            "debug": {
+                "jlink_device": self.chip_variant.lower(),
+                "openocd_chipname": f"at91{self.chip_variant.lower()}",
+                "openocd_target": (
+                    "at91samdXX" if self.chip_family == "SAMD21" else "atsame5x"
+                ),
+                "svd_path": f"{self.chip_variant}.svd",
+            },
+        }
+
+        # add MCU-specific parameters
+        if self.chip_family == "SAMD21":
+            # set the RAM and offset sizes
+            board_json["upload"]["maximum_ram_size"] = 32768
+            board_json["upload"]["maximum_size"] = 262144
+            board_json["upload"]["offset_address"] = "0x2000"
+        elif self.is_samd51:
+            # enable the cache
+            board_json["build"]["extra_flags"].append("-DENABLE_CACHE")
+            # remove the duplicate flags added by default by PlatformIO
+            board_json["build"]["extra_flags"] = [
+                flag
+                for flag in board_json["build"]["extra_flags"]
+                if flag not in ["-mfloat-abi=hard", "-mfpu=fpv4-sp-d16"]
+            ]
+            # SAMD51J20A, SAMD51P20A, and SAMD51N20A have 1032192 flash size (1024kB program memory size)
+            if self.chip_variant in ["SAMD51J20A", "SAMD51P20A", "SAMD51N20A"]:
+                # set the RAM and offset sizes
+                board_json["upload"]["maximum_ram_size"] = 262144
+                board_json["upload"]["maximum_size"] = 1048576
+                board_json["upload"]["offset_address"] = "0x4000"
+            # other SAMD51's have 507904 flash size (512kB program memory size)
+            else:
+                # set the RAM and offset sizes
+                board_json["upload"]["maximum_ram_size"] = 196608
+                board_json["upload"]["maximum_size"] = 524288
+                board_json["upload"]["offset_address"] = "0x4000"
+        # now save to json
+        pio_boards_json_name = (
+            self.build_directory
+            + "/"
+            + self.d["vendor_name"]
+            + "_"
+            + self.d["board_name"]
+            + ".json"
+        )
+        with open(pio_boards_json_name, "w", encoding="UTF-8") as boards_json:
+            json.dump(board_json, boards_json, indent=2)
+
     # gets all necessary paths for GCC and make and adds them to PATH
     # returns environment with these paths
     def get_paths(self):
