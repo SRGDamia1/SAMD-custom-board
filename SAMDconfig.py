@@ -322,8 +322,18 @@ class SAMDconfig:
                 board_config.write("#define CRYSTALLESS      1\n\n")
             if "led_pin" in self.d:
                 board_config.write(
-                    "#define LED_PIN          " + self.d["led_pin"] + "\n\n"
+                    "#define LED_PIN          " + self.d["led_pin"] + "\n"
                 )
+            if "led_tx_pin" in self.d and "led_rx_pin" in self.d:
+                board_config.write(
+                    "#define LED_TX_PIN          " + self.d["led_tx_pin"] + "\n"
+                )
+                board_config.write(
+                    "#define LED_RX_PIN          " + self.d["led_rx_pin"] + "\n\n"
+                )
+            else:
+                board_config.write("\n")
+
             if "board_neopixel_pin" in self.d:
                 board_config.write(
                     "#define BOARD_NEOPIXEL_PIN   "
