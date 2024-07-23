@@ -22,8 +22,10 @@ menu.opt=Optimize
 menu.maxqspi=Max QSPI
 menu.usbstack=USB Stack
 menu.debug=Debug
+
+
 # -----------------------------------
-# $board_name
+# $board_name_long ($chip_family)
 # -----------------------------------
 $board_name.name=$board_name_long
 
@@ -75,6 +77,12 @@ $board_name.menu.opt.fastest=Fastest (-Ofast)
 $board_name.menu.opt.fastest.build.flags.optimize=-Ofast
 $board_name.menu.opt.dragons=Here be dragons (-Ofast -funroll-loops)
 $board_name.menu.opt.dragons.build.flags.optimize=-Ofast -funroll-loops
+
+# Menu: QSPI Speed
+$board_name.menu.maxqspi.50=50 MHz (standard)
+$board_name.menu.maxqspi.50.build.flags.maxqspi=-DVARIANT_QSPI_BAUD_DEFAULT=50000000
+$board_name.menu.maxqspi.fcpu=CPU Speed / 2
+$board_name.menu.maxqspi.fcpu.build.flags.maxqspi=-DVARIANT_QSPI_BAUD_DEFAULT=({build.f_cpu})
 
 # Menu: USB Stack
 $board_name.menu.usbstack.arduino=Arduino
