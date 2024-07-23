@@ -58,6 +58,7 @@ $board_name.build.vid=$usb_vid
 $board_name.build.pid=$usb_pid
 $board_name.bootloader.tool=openocd
 $board_name.bootloader.file=$board_name/$bootloader_filename
+$compiler_ld_flags
 
 # Menu: Cache (only for SAMD51/SAME51)
 $menu_cache
