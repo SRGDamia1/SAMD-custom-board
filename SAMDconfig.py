@@ -57,6 +57,13 @@ class SAMDconfig:
             self.d["chip_family"] == "SAME51"
         )
 
+        # chip variant is first extra flag
+        self.d["extra_flags"] = f"-D__{self.chip_variant}__"
+        # add flag for the board name
+        self.d[
+            "extra_flags"
+        ] += f" -D{self.d['vendor_name'].upper()}_{self.d['board_name'].upper()}"
+
         # add MCU-specific parameters
         if self.chip_family == "SAMD21":
             self.d["flash_size"] = 262144
@@ -64,7 +71,7 @@ class SAMDconfig:
             self.d["offset"] = "0x2000"
             self.d["build_mcu"] = "cortex-m0plus"
             self.d["f_cpu"] = "48000000L"
-            self.d["extra_flags"] = "-DARDUINO_SAMD_ZERO -DARM_MATH_CM0PLUS"
+            self.d["extra_flags"] += " -DARDUINO_SAMD_ZERO -DARM_MATH_CM0PLUS"
             self.d["openocdscript"] = "scripts/openocd/daplink_samd21.cfg"
         elif self.is_samd51:
             # SAMD51J20A, SAMD51P20A, and SAMD51N20A have 1032192 flash size (1024kB program memory size)
@@ -77,15 +84,14 @@ class SAMDconfig:
             self.d["offset"] = "0x4000"
             self.d["build_mcu"] = "cortex-m4"
             self.d["f_cpu"] = "120000000L"
-            self.d["extra_flags"] = (
-                "-D__SAMD51__ -D__FPU_PRESENT -DARM_MATH_CM4 -mfloat-abi=hard -mfpu=fpv4-sp-d16"
-            )
+            self.d[
+                "extra_flags"
+            ] += " -D__SAMD51__ -D__FPU_PRESENT -DARM_MATH_CM4 -mfloat-abi=hard -mfpu=fpv4-sp-d16"
             self.d["openocdscript"] = "scripts/openocd/daplink_samd51.cfg"
         else:
             raise RuntimeError("Invalid MCU family")
 
         # add extra GCC flags
-        self.d["extra_flags"] += f" -D__{self.chip_variant}__"
         if "crystalless" in self.d.keys() and self.d["crystalless"] != "0":
             self.d["extra_flags"] += " -DCRYSTALLESS"
 
@@ -243,7 +249,7 @@ class SAMDconfig:
         if self.is_samd51:
             # cache menu
             cache_prefix = f"{self.name}.menu.cache"
-            self.d["menu_cache"] += f"{cache_prefix}.on = Enabled\n"
+            self.d["menu_cache"] += f"{cache_prefix}.on=Enabled\n"
             self.d[
                 "menu_cache"
             ] += f"{cache_prefix}.on.build.cache_flags=-DENABLE_CACHE\n"
@@ -284,7 +290,7 @@ class SAMDconfig:
             board_mk.write("CHIP_VARIANT = " + self.d["chip_variant"] + "\n")
 
     # creates board_config.h file in given directory
-    # this is for the Arduino IDE
+    # this is used to build the bootloader
     def write_board_config(self, dest_directory):
         print(f"Writing board_config.h file to {dest_directory}/board_config.h")
         with open(
@@ -304,11 +310,11 @@ class SAMDconfig:
             board_config.write(
                 '#define INDEX_URL        "' + self.d["info_url"] + '"\n\n'
             )
-            board_config.write("#define USB_VID          " + self.d["usb_vid"] + "\n")
-            board_config.write("#define USB_PID          " + self.d["usb_pid"] + "\n")
             board_id = self.chip_variant + "-" + self.d["board_define_name"] + "-v0"
             board_config.write('#define BOARD_ID         "' + board_id + '"\n\n')
-            if self.d["crystalless"]:
+            board_config.write("#define USB_VID          " + self.d["usb_vid"] + "\n")
+            board_config.write("#define USB_PID          " + self.d["usb_pid"] + "\n")
+            if "crystalless" in self.d.keys() and self.d["crystalless"] != "0":
                 board_config.write("#define CRYSTALLESS      1\n\n")
             if "led_pin" in self.d:
                 board_config.write(
