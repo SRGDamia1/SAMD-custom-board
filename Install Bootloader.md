@@ -25,16 +25,22 @@ From: <https://wiki.seeedstudio.com/Flashing-Arduino-Bootloader-DAPLink/>
   - `./arm-none-eabi-gdb`
 - Once within the GDB, connect with OpenOCD server using:
   - `target extended-remote localhost:3333`
-- Reset the and halt the chip
+- Reset the and halt the chip. We use the "monitor" command to pass the command from the GDB client to the OpenOCD server.
+  - `monitor telnet_port disabled`
+  - `monitor init`
   - `monitor reset halt`
   - `monitor halt`
+- Set the bootloader elf file as the active file:
+  - `file "{build_dir}/{version}/bootloaders/{board_name}/bootloader-{board_name}-{uf2_version}.elf"`
+- Unlock the fuses for programming (for a SAMD51)
+  - `set ((Nvmctrl  *)0x41004000UL)->CTRLB.reg = (0xA5 << 8) | 0x1a`
 - Fully erase the chip
   - `monitor atsame5 chip-erase` or `at91samd chip-erase`
-- Set the bootloader elf file as the active file:
+- Program the bin file:
   - **NOTE**: *On windows, you need to flip the direction of the slashes from `\` to `/` for this command!*
-  - `file "{build_dir}/{version}/bootloaders/{board_name}/bootloader-{board_name}-{uf2_version}.elf"`
-- Flash the bootloader to the target:
-  - `load`
+  - `monitor program "{build_dir}/bootloader-{board_name}-{uf2_version}" verify reset`
+- Shutdown the OpenOCD server:
+  - `monitor shutdown`
 - Reset the target device by pressing reset buttons and you should see that COM appeared
 
 ## Install the Bootloader with J-Link Edu Mini and J-Flash Lite
@@ -46,9 +52,9 @@ From: <https://wiki.seeedstudio.com/Flashing-Arduino-Bootloader-DAPLink/>
   - Make sure that the JTAG cable is conneced so that the red wire is at the top near where the "1" is printed on the J-Link Edu Mini.  The cable can connect either way (stupid design) so you need to make sure it's connected correctly.
 - Power your target board
 - Open J-Flash **Lite**
-  - J-Flash requires a full licence, J-Flash Lite does not.
+  - J-Flash requires a full licence and commercial J-Link, J-Flash Lite does not.
 - Select your specific chip as the device, "SWD" as the interface, "4000 kHz" as the speed, and hit "OK"
 - Select the compiled bootloader bin (`{build_dir}\bootloader-{board_name}-{uf2_version}.bin`) file as the data file
   - Set the Prog. Address to 0x00000000
-- (Optional) Erase any previous bootloader by hitting the "Erase" button
+- (Optional, but recommended) Erase any previous bootloader by hitting the "Erase" button
 - Hit "Program Device"
