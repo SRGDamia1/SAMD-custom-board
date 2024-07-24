@@ -4,9 +4,37 @@ Here are two different sets of instructions for installing the bootloader onto a
 
 The paths are written for windows. You should change your username in the path from `{user}` to your own user directory and `{repo_path}` to wherever you have this repo installed.
 
-## Install the Bootloader with OpenOCD and a DAPLink Device (ie, Particle Debugger)
+## Fuses and Bootloader Protection
 
-From: <https://wiki.seeedstudio.com/Flashing-Arduino-Bootloader-DAPLink/>
+Atmel boards feature protections to prevent the all or sections of the chip from being written.
+For a novice user, it's much safer to keep the bootloader locked so they cannot accidently overwrite it.
+BUT, to write a bootloader, you must unlock the BOOTPROT region for programming.
+The settings for the bootloader protection are in sections of memory commonly called "fuses", though you may also see them labeled as "configuration bits" or "user rows."
+There is very little documentation online on how to set the fuses - and most of what is available only applies to the simpler SAMD21.
+
+For these instructions, I've sourced information from the [datasheets](https://onlinedocs.microchip.com/oxy/GUID-F5813793-E016-46F5-A9E2-718D8BCED496-en-US-13/GUID-864A0628-0E75-4AFA-969D-A18360C6A381.html?hl=nvmctrl%2Caddr), [Adafruit UF2 bootloader source](https://github.com/adafruit/uf2-samdx1), [Adafruit's instructions for installing a bootloader](https://learn.adafruit.com/installing-circuitpython-on-samd21-boards/installing-the-uf2-bootloader), [SEEED Studio's DAP Link instructions](https://wiki.seeedstudio.com/Flashing-Arduino-Bootloader-DAPLink/), and [Tom Magnier's HACKADAY.IO instructions for SAMD bootloaders](https://hackaday.io/page/5997-programming-a-samd-bootloader-using-jlink-linux).
+
+- The BOOTPROT region is protected against write, erase, or Chip-Erase operations.
+- The NVM User Row (ie, "fuses" or "configuration bits") mapping is available in [section 9.4 of the SAM D5x/E5x Family Data Sheet](https://onlinedocs.microchip.com/oxy/GUID-F5813793-E016-46F5-A9E2-718D8BCED496-en-US-13/GUID-3F814D93-0756-4B17-804B-7F76FA821673.html?hl=nvm%2Cuser%2Cpage) and [section 10.3.1 of the SAM D21/DA1 Family Data Sheet](https://ww1.microchip.com/downloads/aemDocuments/documents/MCU32/ProductDocuments/DataSheets/SAM-D21-DA1-Family-Data-Sheet-DS40001882H.pdf)
+  - `0x41004000` is the base address of the NVMCTRL peripheral
+    - `0x00804000` is the memory offset of Fuse 0/USER_WORD_0
+    - Every other fuse is offset from the first fuse by 32 bits (4 bytes)
+    - The SAMD21 has 2 user fuses and they can be written in individual memory writes
+    - The SAMD51 has 5 user fuses
+      - writes to the user rows must be done as an entire 512 byte "page" that includes the 5 fuses and other blank and factory written regions.
+- For a **SAMD21**, the size of the BOOTPROT region is defined in bits 0:2 of the 32-bit USER_WORD_0
+- For a **SAMD51**, the size of the BOOTPROT region is defined in bits 26:29 of the 32-bit USER_WORD_0
+  - This size is given by the following formula (15-BOOTPROT)*8KB.
+    - Set to 0x0F (15) for 0 kb protected
+      - (15-15)*8 = 0
+    - Set to 0x0D (13) for 16kb protected (the SAMD51 UF2 bootloader is 16kb)
+      - (15-13)*8 = 16
+  - On device startup, the value set for the BOOTPROT in USER_WORD_0 is loaded into NVMCTRL.STATUS bits 11:8
+
+The OpenOCD script for the fuses on the SAMD21 is a lightly modified and heavily documented version of the [fuse setting script](https://github.com/adafruit/uf2-samdx1/blob/master/scripts/fuses.tcl) from the UF2 bootloader.
+The OpenOCD script from the fuses on the SAMD51 started with the SAMD21 script, but had to be re-written almost completely to account for the larger user pages and the fact that individual 32-bit registers cannot be written, only entire 512 byte pages.
+
+## Install the Bootloader with OpenOCD and a DAPLink Device (ie, Particle Debugger)
 
 ### Start up Open OCD
 
@@ -21,21 +49,6 @@ From: <https://wiki.seeedstudio.com/Flashing-Arduino-Bootloader-DAPLink/>
 
 NOTE: If you are using a SAMD/E-51 board and you are 100% certain that your BOOTPROT size is properly set for the UF2 bootloader, you can skip this.
 
-- To write the bootloader, you must unlock the BOOTPROT region for programming by setting the protected size to 0. This is a huge PITA to do. I've modified a script from the UF-2 bootloader to do this.
-  - The BOOTPROT region is protected against write, erase, or Chip-Erase operations.
-  - The NVM User Row (ie, "fuses" or "configuration bits") mapping is available in [section 9.4 of the SAM D5x/E5x Family Data Sheet](https://onlinedocs.microchip.com/oxy/GUID-F5813793-E016-46F5-A9E2-718D8BCED496-en-US-13/GUID-3F814D93-0756-4B17-804B-7F76FA821673.html?hl=nvm%2Cuser%2Cpage) and [section 10.3.1 of the SAM D21/DA1 Family Data Sheet](https://ww1.microchip.com/downloads/aemDocuments/documents/MCU32/ProductDocuments/DataSheets/SAM-D21-DA1-Family-Data-Sheet-DS40001882H.pdf)
-    - `0x41004000` is the base address of the NVMCTRL peripheral
-      - `0x00804000` is the offset of Fuse 0/USER_WORD_0
-      - `0x00804004` is the offset of Fuse 1/USER_WORD_1
-      - `0x00804008` is the offset of Fuse 2/USER_WORD_2 (SAMD51 only)
-  - For a **SAMD21**, the size of the BOOTPROT region is defined in bits 0:2 of the 32-bit USER_WORD_0
-  - For a **SAMD51**, the size of the BOOTPROT region is defined in bits 26:29 of the 32-bit USER_WORD_0
-    - This size is given by the following formula (15-BOOTPROT)*8KB.
-      - Set to 0x0F (15) for 0 kb protected
-        - (15-15)*8 = 0
-      - Set to 0x0D (13) for 16kb protected (the SAMD51 UF2 bootloader is 16kb)
-        - (15-13)*8 = 16
-    - On device startup, the value set for the BOOTPROT in USER_WORD_0 is loaded into NVMCTRL.STATUS bits 11:8
 - Open the file `{repo_path}\fuses\openocd\samd21_fuses.tcl` or `{repo_path}\fuses\openocd\samd51_fuses.tcl` in any text editor.
 - Within the tcl file, change the `set bootprot` statement (line 8) to the correct value for 0kb protected
   - `set bootprot 0x7` for SAMD-21
@@ -103,9 +116,12 @@ This is essentially the same procedure as un-locking the boot protection fuses, 
 
 ## Install the Bootloader with J-Link Edu Mini and J-Flash Lite
 
-See https://hackaday.io/page/5997-programming-a-samd-bootloader-using-jlink-linux for a walk-through with screenshots. That page is the source for these instructions
+See [Tom Magnier's HACKADAY.IO instructions for SAMD bootloaders](https://hackaday.io/page/5997-programming-a-samd-bootloader-using-jlink-linux) for a walk-through with screenshots. That page is the primary source for these instructions
 
 WARNING: Using this procedure will reset all fuses to their default values!  If you've customized your fuses and you want to only change the BOOTPROT fuse, use the OpenOCD method.
+
+TODO: It should be possible to make a J-Link script to read and write the fuses as is done in the OpenOCD method.
+This would be significanly better (though much more complex) than hard-writing a "mot" memory file with the factory settings for the user words/user pages.
 
 ### Install J-Link Software Package
 
