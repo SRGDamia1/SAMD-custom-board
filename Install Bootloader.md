@@ -2,20 +2,55 @@
 
 Here are two different sets of instructions for installing the bootloader onto a SAMD device using either OpenOCD and a DAPLink Device or a J-Link Edu Mini and J-Flash Lite.
 
-The paths are written for windows. You should change your username in the path from `{user}` to your own user directory and the `{build_dir}` path to the output build directory for your built bootloader.
+The paths are written for windows. You should change your username in the path from `{user}` to your own user directory and `{repo_path}` to wherever you have this repo installed.
 
 ## Install the Bootloader with OpenOCD and a DAPLink Device (ie, Particle Debugger)
 
 From: <https://wiki.seeedstudio.com/Flashing-Arduino-Bootloader-DAPLink/>
 
+### Start up Open OCD
+
 - Connect the DAPLink device to both your PC and your target board
 - Power your target board
-
 - Open a terminal for OpenOCD (OpenOCD acts as the GDB server)
-- Navigate to the the installation directory of OpenOCD within the Arduino15 directory
+- Within the terminal, chage directories to the the installation directory of OpenOCD within the Arduino15 directory
   - `cd "C:\Users\{user}\AppData\Local\Arduino15\packages\arduino\tools\openocd\0.11.0-arduino2\bin"`
-- Run the OpenOCD with specific scripts:
-  - `./openocd -s ..\share\openocd\scripts\ -f "{build_dir}\{version}\scripts\openocd\daplink_samd51.cfg"`
+- Use this terminal for all of the remaining steps!
+
+### Unlock the BOOTPROT "fuses"
+
+NOTE: If you are using a SAMD/E-51 board and you are 100% certain that your BOOTPROT size is properly set for the UF2 bootloader, you can skip this.
+
+- To write the bootloader, you must unlock the BOOTPROT region for programming by setting the protected size to 0. This is a huge PITA to do. I've modified a script from the UF-2 bootloader to do this.
+  - The BOOTPROT region is protected against write, erase, or Chip-Erase operations.
+  - The NVM User Row (ie, "fuses" or "configuration bits") mapping is available in [section 9.4 of the SAM D5x/E5x Family Data Sheet](https://onlinedocs.microchip.com/oxy/GUID-F5813793-E016-46F5-A9E2-718D8BCED496-en-US-13/GUID-3F814D93-0756-4B17-804B-7F76FA821673.html?hl=nvm%2Cuser%2Cpage) and [section 10.3.1 of the SAM D21/DA1 Family Data Sheet](https://ww1.microchip.com/downloads/aemDocuments/documents/MCU32/ProductDocuments/DataSheets/SAM-D21-DA1-Family-Data-Sheet-DS40001882H.pdf)
+    - `0x41004000` is the base address of the NVMCTRL peripheral
+      - `0x00804000` is the offset of Fuse 0/USER_WORD_0
+      - `0x00804004` is the offset of Fuse 1/USER_WORD_1
+      - `0x00804008` is the offset of Fuse 2/USER_WORD_2 (SAMD51 only)
+  - For a **SAMD21**, the size of the BOOTPROT region is defined in bits 0:2 of the 32-bit USER_WORD_0
+  - For a **SAMD51**, the size of the BOOTPROT region is defined in bits 26:29 of the 32-bit USER_WORD_0
+    - This size is given by the following formula (15-BOOTPROT)*8KB.
+      - Set to 0x0F (15) for 0 kb protected
+        - (15-15)*8 = 0
+      - Set to 0x0D (13) for 16kb protected (the SAMD51 UF2 bootloader is 16kb)
+        - (15-13)*8 = 16
+    - On device startup, the value set for the BOOTPROT in USER_WORD_0 is loaded into NVMCTRL.STATUS bits 11:8
+- Open the file `{repo_path}\fuses\openocd\samd21_fuses.tcl` or `{repo_path}\fuses\openocd\samd51_fuses.tcl` in any text editor.
+- Within the tcl file, change the `set bootprot` statement (line 8) to the correct value for 0kb protected
+  - `set bootprot 0x7` for SAMD-21
+  - `set bootprot 0x0F` for SAMD-51
+    - NOTE: *Use capital letters for the hex valuez:* `0x0F` **NOT** `0x0f`
+- Within the tcl file, also change the chip name in line 16 to the correct value for your board
+  - ie `set CHIPNAME samd51n19a` for the SAMD51N19A on the Stonefly
+- Save the changes to your tcl file
+- Run OpenOCD with your modified fuse writing script:
+  - `./openocd -s ..\share\openocd\scripts\ -f "{repo_path}\fuses\openocd\samd51_fuses.tcl"`
+
+### Write the Bootloader
+
+- Run OpenOCD with specific scripts:
+  - `./openocd -s ..\share\openocd\scripts\ -f "{repo_path}\build\0.0.1\scripts\openocd\daplink_samd51.cfg"`
 - If all goes well, you should see a message that the programmer is listening on port 3333 for gdb connections
 
 - Open a *second* terminal for the GDB client session
@@ -25,36 +60,94 @@ From: <https://wiki.seeedstudio.com/Flashing-Arduino-Bootloader-DAPLink/>
   - `./arm-none-eabi-gdb`
 - Once within the GDB, connect with OpenOCD server using:
   - `target extended-remote localhost:3333`
-- Reset the and halt the chip. We use the "monitor" command to pass the command from the GDB client to the OpenOCD server.
-  - `monitor telnet_port disabled`
+- For almost all of the following commands, **we use the "monitor" command to pass the command from the GDB client to the OpenOCD server.**
+- Reset the and halt the chip.
   - `monitor init`
   - `monitor reset halt`
   - `monitor halt`
-- Set the bootloader elf file as the active file:
-  - `file "{build_dir}/{version}/bootloaders/{board_name}/bootloader-{board_name}-{uf2_version}.elf"`
-- Unlock the fuses for programming (for a SAMD51)
-  - `set ((Nvmctrl  *)0x41004000UL)->CTRLB.reg = (0xA5 << 8) | 0x1a`
+- For a *SAMD51*, if the BOOTPROT fuse is properly set to the correct size for your bootloader, you can *temporarily* disable it just for a single erase and write using the command:
+  - If you unlocked the fuses using the steps above, don't use this!
+  - `monitor memwrite16 [expr 0x41004000 + 0x04]  [expr 0xA500 | 0x1a]`
+  - `set ((NVMCTRL *)0x41004000UL)->CTRLB.reg = (0xA5 << 8) | 0x1a`
+    - 0x41004000 = NVMCTRL (Start address of NVM control registers)
+    - 0x04 = Offset of NVMCTRL_CTRLB from NVMCTRL (CTRLB.reg)
+    - 0xa5 = Position of Execution Key wihtin NVMCTRL_CTRLB
+    - 0x1a = Value of command to set STATUS.BPDIS; Boot loader protection is discarded until CBPDIS is issued or next start-up sequence
 - Fully erase the chip
-  - `monitor atsame5 chip-erase` or `at91samd chip-erase`
+  - For SAMD21: `monitor at91samd chip-erase`
+  - For SAMD51: `monitor atsame5 chip-erase`
 - Program the bin file:
   - **NOTE**: *On windows, you need to flip the direction of the slashes from `\` to `/` for this command!*
-  - `monitor program "{build_dir}/bootloader-{board_name}-{uf2_version}" verify reset`
+  - `monitor program "{repo_path}/build/bootloader-{board_name}-{uf2_version}" verify reset`
 - Shutdown the OpenOCD server:
   - `monitor shutdown`
-- Reset the target device by pressing reset buttons and you should see that COM appeared
+- Reset the target device by pressing reset buttons and you should see that a COM appeared
+- Quit GDB
+  - `quit` then `y`
+- Close this second terminal.  Leave the OpenOCD terminal open.
+
+### Re-Lock the BOOTPROT "fuses"
+
+NOTE: If you are using a SAMD/E-51 board and you skipped unlocking fuses, you can skip this too.
+
+This is essentially the same procedure as un-locking the boot protection fuses, except we set the value of the boot protection to the size of the bootloader instead of 0.
+
+- Open the file `{repo_path}\fuses\openocd\samd21_fuses.tcl` or `{repo_path}\fuses\openocd\samd51_fuses.tcl` in any text editor.
+- Within the tcl file, change the `set bootprot` statement (line 8) to the correct value for the size of the bootloader
+  - `set bootprot 0x2` for 8kb protection for the SAMD-21
+  - `set bootprot 0x0D` for 16kB protection on the SAMD-51
+    - NOTE: *Use capital letters for the hex valuez:* `0x0D` **NOT** `0x0d`
+- Save the changes to your tcl file
+- Run OpenOCD with your modified fuse writing script:
+  - `./openocd -s ..\share\openocd\scripts\ -f "{repo_path}\fuses\openocd\samd51_fuses.tcl"`
 
 ## Install the Bootloader with J-Link Edu Mini and J-Flash Lite
+
+See https://hackaday.io/page/5997-programming-a-samd-bootloader-using-jlink-linux for a walk-through with screenshots. That page is the source for these instructions
+
+WARNING: Using this procedure will reset all fuses to their default values!  If you've customized your fuses and you want to only change the BOOTPROT fuse, use the OpenOCD method.
+
+### Install J-Link Software Package
 
 - Install the J-Link software package, including J-Flash Lite from <https://www.segger.com/downloads/jlink/>
 - Connect the J-Link Edu Mini device to your PC
 - If desired, update the firmware on your J-Link by using the J-Link Configurator program
+
 - Connect the J-Link Edu mini to and your target board with the JTAG cable
   - Make sure that the JTAG cable is conneced so that the red wire is at the top near where the "1" is printed on the J-Link Edu Mini.  The cable can connect either way (stupid design) so you need to make sure it's connected correctly.
 - Power your target board
-- Open J-Flash **Lite**
-  - J-Flash requires a full licence and commercial J-Link, J-Flash Lite does not.
-- Select your specific chip as the device, "SWD" as the interface, "4000 kHz" as the speed, and hit "OK"
-- Select the compiled bootloader bin (`{build_dir}\bootloader-{board_name}-{uf2_version}.bin`) file as the data file
-  - Set the Prog. Address to 0x00000000
-- (Optional, but recommended) Erase any previous bootloader by hitting the "Erase" button
-- Hit "Program Device"
+
+### Connect J-Link to Target
+
+- Start JLinkExe
+- Connect to the microcontroller. You have to specify the device type, SWD interface and you can use the default interface speed.
+  - Enter `ATSAMD21G18` for the device (or whatever chip you have)
+  - Enter `S` for SWD interface
+  - Enter `4000` for the speed (or just hit enter, because that's the default)
+
+### Unlock the BOOTPROT "fuses"
+
+- Load the memory file that will clear the boot loader protection fuse
+  - for SAMD21: `loadfile {repo_path}\fuses\jlink\SAMD21_clear_BOOTPROT.mot`
+  - for SAMD51: `loadfile {repo_path}\fuses\jlink\SAMD51_clear_BOOTPROT.mot`
+- Reset the target
+  - `r`
+
+### Write the Bootloader
+
+- Erase any old firmware and bootloader
+  - `erase`
+- Reset the target
+  - `r`
+- Upload the bootloader file to address 0
+  - `loadbin "{repo_path}\build\bootloader-stonefly_m4-v3.16.0.bin",0`
+- Reset the target
+  - `r`
+
+### Re-Lock the BOOTPROT "fuses"
+
+- Load the memory file that will set the boot loader protection fuse to 8kb
+  - for SAMD21: `loadfile {repo_path}\fuses\jlink\SAMD21_set_BOOTPROT_8k.mot`
+  - for SAMD51: `loadfile {repo_path}\fuses\jlink\SAMD51_set_BOOTPROT_16k.mot`
+- Reset the target
+  - `r`
