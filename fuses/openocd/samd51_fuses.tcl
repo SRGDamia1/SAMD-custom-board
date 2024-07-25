@@ -7,7 +7,7 @@ set forceupdate 0
 # 0x0D (13) for 16kb protected (the SAMD51 UF2 bootloader is 16kb)
 set bootprot 0x0D
 
-#  Set up the Transport and Chip (copied from daplink_samd51.cfg)
+#  Set up the Transport and Chip
 
 source [find interface/cmsis-dap.cfg]
 transport select swd
@@ -18,12 +18,11 @@ set CHIPNAME samd51n19a
 source [find target/atsame5x.cfg]
 
 
-# The SAMD/E41 has 5 32-bit "fuses", aka User Rows, USER_WORD, or Configuration Bits
+# The SAMD/E51 has 5 32-bit "fuses", aka User Rows, USER_WORD, or Configuration Bits
 # BUT for the SAMD/E51 we need to write the whole 512 byte (4096 bit) user page at once.
 set n_32bit_reads_page 132
 
-# Default value for Fuse 0 (User Row / USER_WORD_0)
-# 0xFE9A9239 = 0b11111110100110101001001000111001
+# Default values for Fuse 0 (User Row / USER_WORD_0)
 # ---- Brownout Detection - see SUPC.BOD33 register
 # 0 BOD33 Disable, default = 0x1,  0b1 (enabled)
 # 8:1 BOD33 Level, default = 0x1C, 0b00011100 << 1
@@ -32,10 +31,14 @@ set n_32bit_reads_page 132
 # 25:15 BOD12 Calibration Parameters - do not change, default = 0b10100110101 << 15
 # ---- Boot protection!
 # 29:26 NVM BOOTPROT, default = 0b1111 < 26
-# 31:30 Reserved, Factory settings - do not change, default = 0b11 < 30
+# 31:30 Reserved, Factory settings - do not change, default = 0b11 << 30
+# Factory Default:
+# 0xFE9A9239 = 0b11111110100110101001001000111001
+# Changable Bits Mask (1 bits are user changable, 0 bits are reserved)
+# 0x3C007FFF = 0b00111100000000000111111111111111
 set v0 0xFE9A9239
-# Default value for Fuse 1 ((User Row / USER_WORD_1)
-# 0xAEECFF80 = 0b10101110111011001111111110000000
+
+# Default values for Fuse 1 ((User Row / USER_WORD_1)
 # ---- SmartEEPROM - see NVMCTRL.SEESTAT
 # 35:32 SBLK (Number of NVM Blocks composing a SmartEEPROM sector), default = 0x0
 # 38:36 PSZ (SmartEEPROM Page Size), default = 0x0 << 4
@@ -49,6 +52,10 @@ set v0 0xFE9A9239
 # 61:58 WDT EWOFFSET (Early Warning Interrupt Time Offset), default = 0xB, 0b1011 << 26
 # 62 WDT WEN (Window Mode Enable), default = 0x0, 0b0 << 30 (disabled)
 # 63 Reserved Factory settings - do not change, default = 0b1 << 31
+# Factory Default:
+# 0xAEECFF80 = 0b10101110111011001111111110000000
+# Changable Bits Mask (1 bits are user changable, 0 bits are reserved)
+# 0x7FFF00FF = 0b01111111111111110000000011111111
 set v1 0xAEECFF80
 set v2 0xFFFFFFFF
 # fuses[3] is for user use, so we don't change it.

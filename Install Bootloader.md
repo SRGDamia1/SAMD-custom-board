@@ -21,7 +21,7 @@ For these instructions, I've sourced information from the [datasheets](https://o
     - Every other fuse is offset from the first fuse by 32 bits (4 bytes)
     - The SAMD21 has 2 user fuses and they can be written in individual memory writes
     - The SAMD51 has 5 user fuses
-      - writes to the user rows must be done as an entire 512 byte "page" that includes the 5 fuses and other blank and factory written regions.
+      - Writes to the user rows must be done as an entire 512 byte "page" that includes the 5 fuses and other factory calibration data.
 - For a **SAMD21**, the size of the BOOTPROT region is defined in bits 0:2 of the 32-bit USER_WORD_0
 - For a **SAMD51**, the size of the BOOTPROT region is defined in bits 26:29 of the 32-bit USER_WORD_0
   - This size is given by the following formula (15-BOOTPROT)*8KB.
@@ -53,17 +53,18 @@ NOTE: If you are using a SAMD/E-51 board and you are 100% certain that your BOOT
 - Within the tcl file, change the `set bootprot` statement (line 8) to the correct value for 0kb protected
   - `set bootprot 0x7` for SAMD-21
   - `set bootprot 0x0F` for SAMD-51
-    - NOTE: *Use capital letters for the hex valuez:* `0x0F` **NOT** `0x0f`
+    - NOTE: *Use capital letters for the hex values:* `0x0F` **NOT** `0x0f`
 - Within the tcl file, also change the chip name in line 16 to the correct value for your board
   - ie `set CHIPNAME samd51n19a` for the SAMD51N19A on the Stonefly
 - Save the changes to your tcl file
 - Run OpenOCD with your modified fuse writing script:
-  - `./openocd -s ..\share\openocd\scripts\ -f "{repo_path}\fuses\openocd\samd51_fuses.tcl"`
+  - SAMD21: `./openocd -s ..\share\openocd\scripts\ -f "{repo_path}\fuses\openocd\samd21_fuses.tcl"`
+  - SAMD51: `./openocd -s ..\share\openocd\scripts\ -f "{repo_path}\fuses\openocd\samd51_fuses.tcl"`
 
 ### Write the Bootloader
 
-- Run OpenOCD with specific scripts:
-  - `./openocd -s ..\share\openocd\scripts\ -f "{repo_path}\build\0.0.1\scripts\openocd\daplink_samd51.cfg"`
+- Run OpenOCD with configuration for your board:
+  - `./openocd -s ..\share\openocd\scripts\ -f "{repo_path}\build\0.0.1\scripts\openocd\daplink_samdx1.cfg"`
 - If all goes well, you should see a message that the programmer is listening on port 3333 for gdb connections
 
 - Open a *second* terminal for the GDB client session
@@ -81,14 +82,13 @@ NOTE: If you are using a SAMD/E-51 board and you are 100% certain that your BOOT
 - For a *SAMD51*, if the BOOTPROT fuse is properly set to the correct size for your bootloader, you can *temporarily* disable it just for a single erase and write using the command:
   - If you unlocked the fuses using the steps above, don't use this!
   - `monitor memwrite16 [expr 0x41004000 + 0x04]  [expr 0xA500 | 0x1a]`
-  - `set ((NVMCTRL *)0x41004000UL)->CTRLB.reg = (0xA5 << 8) | 0x1a`
+  - ~~`set ((NVMCTRL *)0x41004000UL)->CTRLB.reg = (0xA5 << 8) | 0x1a`~~
     - 0x41004000 = NVMCTRL (Start address of NVM control registers)
     - 0x04 = Offset of NVMCTRL_CTRLB from NVMCTRL (CTRLB.reg)
     - 0xa5 = Position of Execution Key wihtin NVMCTRL_CTRLB
     - 0x1a = Value of command to set STATUS.BPDIS; Boot loader protection is discarded until CBPDIS is issued or next start-up sequence
 - Fully erase the chip
-  - For SAMD21: `monitor at91samd chip-erase`
-  - For SAMD51: `monitor atsame5 chip-erase`
+  - `monitor $_FLASHDRIVER chip-erase`
 - Program the bin file:
   - **NOTE**: *On windows, you need to flip the direction of the slashes from `\` to `/` for this command!*
   - `monitor program "{repo_path}/build/bootloader-{board_name}-{uf2_version}" verify reset`
@@ -109,10 +109,24 @@ This is essentially the same procedure as un-locking the boot protection fuses, 
 - Within the tcl file, change the `set bootprot` statement (line 8) to the correct value for the size of the bootloader
   - `set bootprot 0x2` for 8kb protection for the SAMD-21
   - `set bootprot 0x0D` for 16kB protection on the SAMD-51
-    - NOTE: *Use capital letters for the hex valuez:* `0x0D` **NOT** `0x0d`
+    - NOTE: *Use capital letters for the hex values:* `0x0D` **NOT** `0x0d`
 - Save the changes to your tcl file
 - Run OpenOCD with your modified fuse writing script:
-  - `./openocd -s ..\share\openocd\scripts\ -f "{repo_path}\fuses\openocd\samd51_fuses.tcl"`
+  - SAMD21: `./openocd -s ..\share\openocd\scripts\ -f "{repo_path}\fuses\openocd\samd21_fuses.tcl"`
+  - SAMD51: `./openocd -s ..\share\openocd\scripts\ -f "{repo_path}\fuses\openocd\samd51_fuses.tcl"`
+
+## Install the Bootloader with OpenOCD and a DAPLink Device (v2)
+
+### Do everything with OpenOCD commands
+
+- Connect the DAPLink device to both your PC and your target board
+- Power your target board
+- Open a terminal for OpenOCD (OpenOCD acts as the GDB server)
+- Within the terminal, chage directories to the the installation directory of OpenOCD within the Arduino15 directory
+  - `cd "C:\Users\{user}\AppData\Local\Arduino15\packages\arduino\tools\openocd\0.11.0-arduino2\bin"`
+- Use this terminal for all of the remaining steps!
+- SAMD51: `./openocd -d3 --s ..\share\openocd\scripts\ -f "{repo_path}\build\0.0.1\scripts\openocd\daplink_samdx1.cfg" -c "telnet_port disabled; init; reset halt; halt; $_FLASHDRIVER chip-erase; $_FLASHDRIVER bootloader 0; program {{repo_path}/build/bootloader-{board_name}-{uf2_version}} verify reset; $_FLASHDRIVER bootloader 16384; shutdown"`
+- SAMD21: `./openocd -d3 --s ..\share\openocd\scripts\ -f "{repo_path}\build\0.0.1\scripts\openocd\daplink_samdx1.cfg" -c "telnet_port disabled; init; reset halt; halt; $_FLASHDRIVER chip-erase; $_FLASHDRIVER bootloader 0; program {{repo_path}/build/bootloader-{board_name}-{uf2_version}} verify reset; $_FLASHDRIVER bootloader 8192; shutdown"`
 
 ## Install the Bootloader with J-Link Edu Mini and J-Flash Lite
 

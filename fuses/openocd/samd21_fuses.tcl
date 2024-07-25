@@ -7,7 +7,7 @@ set forceupdate 0
 # 0x2, 0b010 = 8KB protected (the size of the UF2 SAMD21 bootloader)
 set bootprot 0x7
 
-#  Set up the Transport and Chip (copied from daplink_samd51.cfg)
+#  Set up the Transport and Chip
 
 source [find interface/cmsis-dap.cfg]
 transport select swd
@@ -20,8 +20,7 @@ source [find target/at91samdXX.cfg]
 # The SAMD21 has 2 32-bit "fuses", aka User Rows, USER_WORD, or Configuration Bits
 # Each row on the SAMD21 can be written individually
 
-# Default value for Fuse 0 (User Row / USER_WORD_0)
-# 0xD8E0C7FF = 0b11011000111000001100011111111111
+# Default values for Fuse 0 (User Row / USER_WORD_0)
 # ---- Boot protection!
 # 2:0 BOOTPROT, default = 7, 0b111 (0 bytes protected) (see datasheet table 22-2 for options)
 # 3 Reserved (0b1 << 3)
@@ -38,9 +37,13 @@ source [find target/at91samdXX.cfg]
 # 30:27 WDT Period, default = 0x0B, 0b1011 << 27 (16384 clock cycles)
 # 34:31 WDT Window, default = 0x05, 0b101 << 31 (256 clocks cycles)
 # ^^ NOTE: only lowest bit of WDT Window is in USER_WORD_0 (WHY??)
+# Factory Default:
+# 0xD8E0C7FF = 0b11011000111000001100011111111111
+# Changable Bits Mask (1 bits are user changable, 0 bits are reserved)
+# 0xFE01FF77 = 0b11111110000000011111111101110111
 set v0 0xD8E0C7FF
-# Default value for Fuse 1 ((User Row / USER_WORD_1)
-# 0xFFFFFC5D = 0b11111111111111111111110001011101
+
+# Default values for Fuse 1 ((User Row / USER_WORD_1)
 # 34:31 WDT Window, default = 0x05, 0b101 (256 clocks cycles)
 # ^^ NOTE: only upper 3 bits of WDT Window is in USER_WORD_1
 # 38:35 WDT EWOFFSET (Early Warning Offset), default = 0x0B, 0b1011 << 3 (16384 clock cycles)
@@ -51,6 +54,10 @@ set v0 0xD8E0C7FF
 # ---- Reserved
 # 47:42 Reserved, default = 0b11111 << 10
 # 63:48 LOCK, default = 0xFFFF, 0b1111111111111111 << 16 (unlocked)
+# Factory Default:
+# 0xFFFFFC5D = 0b11111111111111111111110001011101
+# Changable Bits Mask (1 bits are user changable, 0 bits are reserved)
+# 0xFFFF01FF = 0b11111111111111110000000111111111
 set v1 0xFFFFFC5D
 
 # initialize

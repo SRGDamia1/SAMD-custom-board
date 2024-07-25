@@ -72,7 +72,7 @@ class SAMDconfig:
             self.d["build_mcu"] = "cortex-m0plus"
             self.d["f_cpu"] = "48000000L"
             self.d["extra_flags"] += " -DARDUINO_SAMD_ZERO -DARM_MATH_CM0PLUS"
-            self.d["openocdscript"] = "scripts/openocd/daplink_samd21.cfg"
+            self.d["openocdscript"] = "scripts/openocd/daplink_samdx1.cfg"
             self.d["compiler_ld_flags"] = ""
         elif self.is_samd51:
             # SAMD51J20A, SAMD51P20A, and SAMD51N20A have 1032192 flash size (1024kB program memory size)
@@ -88,7 +88,7 @@ class SAMDconfig:
             self.d[
                 "extra_flags"
             ] += " -D__SAMD51__ -D__FPU_PRESENT -DARM_MATH_CM4 -mfloat-abi=hard -mfpu=fpv4-sp-d16"
-            self.d["openocdscript"] = "scripts/openocd/daplink_samd51.cfg"
+            self.d["openocdscript"] = "scripts/openocd/daplink_samdx1.cfg"
             self.d["compiler_ld_flags"] = (
                 f'{self.d["board_name"]}.compiler.arm.cmsis.ldflags="-L{{runtime.tools.CMSIS-5.4.0.path}}/CMSIS/Lib/GCC/" "-L{{build.variant.path}}" -larm_cortexM4lf_math -mfloat-abi=hard -mfpu=fpv4-sp-d16'
             )
@@ -220,16 +220,14 @@ class SAMDconfig:
         with open(jlink_debug_file, "w", encoding="UTF-8") as json_file:
             json.dump(debug_custom, json_file, indent=2)
 
-        jlink_ocd_cfg = f"{scripts_dir}/openocd/jlink_{self.chip_family.lower()}.cfg"
-        daplink_ocd_cfg = (
-            f"{scripts_dir}/openocd/daplink_{self.chip_family.lower()}.cfg"
-        )
+        jlink_ocd_cfg = f"{scripts_dir}/openocd/jlink_samdx1.cfg"
+        daplink_ocd_cfg = f"{scripts_dir}/openocd/daplink_samdx1.cfg"
         for file, source in zip(
             [jlink_ocd_cfg, daplink_ocd_cfg], ["jlink", "cmsis-dap"]
         ):
             with open(file, "w", encoding="UTF-8") as ocd_script:
                 # write header
-                ocd_script.write("#\n#  Arduino SAMD51 OpenOCD script.\n#\n\n")
+                ocd_script.write("#\n#  Arduino SAMDx1 OpenOCD script.\n#\n\n")
                 # set the interface source
                 ocd_script.write(f"source [find interface/{source}.cfg]\n")
                 # select SWD as the transport
