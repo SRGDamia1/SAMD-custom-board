@@ -1,0 +1,36 @@
+{
+  "name": "$board_name_long",
+  "url": "$info_url",
+  "vendor": "$vendor_name_long",
+  "frameworks": ["arduino"],
+  "build": {
+    "arduino": { "ldscript": "flash_with_bootloader.ld" },
+    "core": "adafruit",
+    "cpu": "cortex-m4",
+    "extra_flags": $extra_flags_pio,
+    "f_cpu": "$f_cpu",
+    "hwids": [["$usb_vid", "$usb_pid"]],
+    "mcu": "$chip_variant_lower",
+    "system": "samd",
+    "usb_product": "$board_name_long",
+    "variant": "$board_name"
+  },
+  "upload": {
+    "disable_flushing": true,
+    "native_usb": true,
+    "protocol": "sam-ba",
+    "protocols": ["sam-ba", "jlink", "atmel-ice"],
+    "require_upload_port": true,
+    "use_1200bps_touch": true,
+    "wait_for_upload_port": true,
+    "maximum_ram_size": $ram_size,
+    "maximum_size": $flash_size,
+    "offset_address": "$offset"
+  },
+  "debug": {
+    "jlink_device": "$chip_variant_lower",
+    "write_platform_templates": "$chip_variant",
+    "openocd_target": "$openocd_target",
+    "svd_path": "$chip_variant.svd"
+  }
+}

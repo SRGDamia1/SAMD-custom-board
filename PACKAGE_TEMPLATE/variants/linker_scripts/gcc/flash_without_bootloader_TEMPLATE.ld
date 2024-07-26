@@ -20,17 +20,13 @@
  * Need modifying for a specific board.
  *   FLASH.ORIGIN: starting address of flash
  *   FLASH.LENGTH: length of flash
- *       0x00100000 = 1048576
- *       0x00080000 = 524288
  *   RAM.ORIGIN: starting address of RAM bank 0
  *   RAM.LENGTH: length of RAM bank 0
- *       0x00040000 = 262144
- *       0x00030000 = 196608
  */
 MEMORY
 {
-  FLASH (rx) : ORIGIN = 0x00000000+0x4000, LENGTH = 0x00080000-0x4000 /* First 16KB used by bootloader */
-  RAM (rwx) : ORIGIN = 0x20000000, LENGTH = 0x00030000
+  FLASH (rx) : ORIGIN = 0x00000000, LENGTH = 0x00040000
+  RAM (rwx) : ORIGIN = 0x20000000, LENGTH = 0x00008000
 }
 
 /* Linker script to place sections and symbol values. Should be used together
@@ -62,6 +58,7 @@ MEMORY
  *   __StackLimit
  *   __StackTop
  *   __stack
+ *   __ram_end__
  */
 ENTRY(Reset_Handler)
 
@@ -71,9 +68,6 @@ SECTIONS
 	{
 		__text_start__ = .;
 
-		KEEP(*(.sketch_boot))
-
-		. = ALIGN(0x4000);
 		KEEP(*(.isr_vector))
 		*(.text*)
 

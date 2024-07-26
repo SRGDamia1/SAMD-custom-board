@@ -56,6 +56,10 @@ class SAMDconfig:
         self.is_samd51 = (self.d["chip_family"] == "SAMD51") or (
             self.d["chip_family"] == "SAME51"
         )
+        self.d["chip_variant_lower"] = self.d["chip_variant"].lower()
+        self.d["openocd_target"] = (
+            "at91samdXX" if self.chip_family == "SAMD21" else "atsame5x"
+        )
 
         # chip variant is first extra flag
         self.d["extra_flags"] = f"-D__{self.chip_variant}__"
@@ -65,24 +69,54 @@ class SAMDconfig:
         ] += f" -D{self.d['vendor_name'].upper()}_{self.d['board_name'].upper()}"
 
         # add MCU-specific parameters
+        # SAMD21's have up to 256kB flash and up to 32kB RAM
+        # 15 series - 32kB flash; 4096 RAM
+        # 16 series - 64kB flash; 8192 RAM
+        # 17 series - 128kB flash; 16384 RAM
+        # 18 series - 256kB flash; 32768 RAM
+        # NOTE: The only Arduino boards I've found use the '18' series
         if self.chip_family == "SAMD21":
-            self.d["flash_size"] = 262144
             self.d["data_size"] = 0
-            self.d["offset"] = "0x2000"
+            self.d["flash_size"] = 262144  # 0x00040000 including bootloader space
+            self.d["ram_size"] = 32768  # 0x00008000
+            self.d["maximum_size"] = 262144  # 0x00040000 including bootloader space
+            self.d["offset"] = "0x2000"  # 8192, size of the bootloader
             self.d["build_mcu"] = "cortex-m0plus"
             self.d["f_cpu"] = "48000000L"
             self.d["extra_flags"] += " -DARDUINO_SAMD_ZERO -DARM_MATH_CM0PLUS"
             self.d["openocdscript"] = "scripts/openocd/daplink_samdx1.cfg"
             self.d["compiler_ld_flags"] = ""
         elif self.is_samd51:
-            # SAMD51J20A, SAMD51P20A, and SAMD51N20A have 1032192 flash size (1024kB program memory size)
-            if self.chip_variant in ["SAMD51J20A", "SAMD51P20A", "SAMD51N20A"]:
-                self.d["flash_size"] = 1032192
-            # other SAMD51's have 507904 flash size (512kB program memory size)
-            else:
-                self.d["flash_size"] = 507904
             self.d["data_size"] = 0
-            self.d["offset"] = "0x4000"
+            self.d["offset"] = "0x4000"  # 16384, size of the bootloader
+            # The 20A series (SAMD51J20A, SAMD51P20A, and SAMD51N20A, also SAME51 equivalents)
+            # - 1024kB flash size; 262144 (256kB) RAM size
+            if "20A" in self.chip_variant.upper():
+                self.d["flash_size"] = (
+                    1032192  # 0x000FC000, not including 16kB bootloader space
+                )
+                self.d["ram_size"] = 262144  # 0x00040000
+                self.d["maximum_size"] = (
+                    1048576  # 0x00100000, including 16kB bootloader space
+                )
+            # The 19A series (SAMD51G19A, SAMD51J19A, SAMD51P19A, and SAMD51N19A, also SAME51 equivalents)
+            # - 512kB flash size; 1966088 (192kB) RAM size
+            elif "19A" in self.chip_variant.upper():
+                self.d["flash_size"] = (
+                    507904  # 0x0007C000, not including 16kB bootloader space
+                )
+                self.d["ram_size"] = 1966088  # 0x00030000
+                self.d["maximum_size"] = (
+                    524288  # 0x00080000, including 16kB bootloader space
+                )
+            # The 18A series (SAMD51G18A, SAMD51J18A, also SAME51 equivalents)
+            # - 256kB flash size; 131072 (128kB) RAM size
+            elif "18A" in self.chip_variant.upper():
+                self.d["flash_size"] = 262144  # 0x00040000, including bootloader space
+                self.d["ram_size"] = 131072  # 00020000
+                self.d["maximum_size"] = (
+                    262144  # 0x00040000, including bootloader space
+                )
             self.d["build_mcu"] = "cortex-m4"
             self.d["f_cpu"] = "120000000L"
             self.d[
@@ -95,6 +129,10 @@ class SAMDconfig:
         else:
             raise RuntimeError("Invalid MCU family")
 
+        # convert to some strings needed for templates
+        self.d["flash_size_hex"] = hex(self.d["flash_size"])
+        self.d["ram_size_hex"] = hex(self.d["ram_size"])
+
         # add extra GCC flags
         if "crystalless" in self.d.keys() and self.d["crystalless"] != "0":
             self.d["extra_flags"] += " -DCRYSTALLESS"
@@ -103,6 +141,17 @@ class SAMDconfig:
         self.d["extra_flags"] += (
             " " + config_file["additional_build_flags"]["extra_extra_flags"]
         )
+        self.d["extra_flags_pio"] = self.d["extra_flags"].split(" ")
+        # remove the duplicate flags added by default by PlatformIO
+        self.d["extra_flags_pio"] = [
+            flag
+            for flag in self.d["extra_flags_pio"]
+            if flag not in ["-mfloat-abi=hard", "-mfpu=fpv4-sp-d16"]
+        ]
+        if self.is_samd51:
+            # enable the cache
+            # this is done in a special cache flag for the Arduino IDE, but in the build flags for PlatformIO
+            self.d["extra_flags_pio"].append("-DENABLE_CACHE")
 
     def check_missing_values(self, dictionary):
         for key, value in dictionary.items():
@@ -136,115 +185,43 @@ class SAMDconfig:
             print("Removing old build directory")
             shutil.rmtree(dirname, onerror=remove_readonly)
         # copy the template directory into the build directory
+        print("Copying the template directory")
         shutil.copytree("PACKAGE_TEMPLATE", self.package_directory)
 
-        # clone the latest version of the uf2-samdx1 repo into the build directory
-        # shutil.copytree("uf2-samdx1", f"{self.build_directory}/uf2-samdx1")
-        print("Checking the tag of the latest release of Adafruit's uf2 repo...")
-        response = requests.get(
-            "https://api.github.com/repos/adafruit/uf2-samdx1/releases/latest"
-        )
-        latest_release_tag = response.json()["tag_name"]
-        self.d["uf2_version_tag"] = latest_release_tag
-        print(
-            f"The latest release of Adafruit's uf2 repo is tag {latest_release_tag}, published {response.json()['published_at']}"
-        )
-        print("Cloning Adafruit's uf2 repo...")
-        with open(
-            f"{self.build_directory}/bootloader_build_log.txt", "w", encoding="UTF-8"
-        ) as logfile:
-            command = f"git clone --depth 1 --branch {latest_release_tag} https://github.com/adafruit/uf2-samdx1.git {self.build_directory}/uf2-samdx1"
-            git_process = subprocess.run(
-                command,
-                shell=True,
-                stdout=logfile,
-                stderr=subprocess.STDOUT,
-                text=True,
-            )
-            if git_process.returncode:
-                print(
-                    "Cloning Adafruit uf2 repo failed. Please see the log file for details"
-                )
-            else:
-                print("Successfully cloned latest Adafruit uf2 repo")
+        # select which fuse setting script to keep
+        fuses_dir = self.package_directory + "/scripts/fuses"
 
-        # select which board variant template directory to use -
-        # There are different linker scripts depending on the chip and memory size
+        # delete irrelevant the fuse-setting scripts
+        fuse_src_files = [
+            os.path.join(dp, f)
+            for dp, dn, filenames in os.walk(fuses_dir)
+            for f in filenames
+        ]
+        for file_name in fuse_src_files:
+            if os.path.isfile(file_name) and self.chip_family.lower() not in file_name:
+                os.remove(file_name)
         variants_dir = self.package_directory + "/variants"
         board_variant = f"{variants_dir}/{self.name}"
-        if self.chip_family == "SAMD21":
-            # rename one of template directories and delete two others
-            shutil.move(variants_dir + "/TEMPLATE_SAMD21", board_variant)
-            shutil.rmtree(variants_dir + "/TEMPLATE_SAMD51")
-            shutil.rmtree(variants_dir + "/TEMPLATE_SAMD51P20A")
-
-        # SAMD boards with 1024kB Flash/256kB SRAM
-        elif self.chip_variant in ["SAMD51J20A", "SAMD51P20A", "SAMD51N20A"]:
-            # rename one of template directories and delete two others
-            shutil.move(variants_dir + "/TEMPLATE_SAMD51P20A", board_variant)
-            shutil.rmtree(variants_dir + "/TEMPLATE_SAMD51")
-            shutil.rmtree(variants_dir + "/TEMPLATE_SAMD21")
-        # Remaining SAMD boards with 512kB Flash/192kB SRAM
-        else:
-            # rename one of template directories and delete two others
-            shutil.move(variants_dir + "/TEMPLATE_SAMD51", board_variant)
-            shutil.rmtree(variants_dir + "/TEMPLATE_SAMD21")
-            shutil.rmtree(variants_dir + "/TEMPLATE_SAMD51P20A")
 
         # move the hand written variants files into the board variant directory
-        shutil.copy2("board_data/variant.cpp", board_variant)
-        shutil.copy2("board_data/variant.h", board_variant)
+        shutil.copy2("board_data/variant.cpp", f"{board_variant}.cpp")
+        shutil.copy2("board_data/variant.h", f"{board_variant}.h")
 
-    # creates script files for J-Link and OpenOCD
-    # these are needed to write the bootloader onto the board and for debugging
-    def write_ocd_scripts(self):
-        # Select which script directory to use for J-Link and OpenOCD
-        scripts_dir = self.package_directory + "/scripts"
-        # create the scripts directory
-        os.makedirs(scripts_dir, exist_ok=True)
-        os.makedirs(f"{scripts_dir}/jlink", exist_ok=True)
-        os.makedirs(f"{scripts_dir}/jlink/{self.chip_family.lower()}", exist_ok=True)
-        os.makedirs(f"{scripts_dir}/openocd", exist_ok=True)
-
-        # write the J-Link debug json
-        debug_custom = {
-            "servertype": "jlink",
-            "device": self.chip_variant,
-            "interface": "SWD",
-            "serverpath": "JLinkGDBServer",
-        }
-        jlink_debug_file = (
-            f"{scripts_dir}/jlink/{self.chip_family.lower()}/debug_custom.json"
+        # Add filenames to the dictionary
+        self.d["bootloader_dir"] = (
+            f"{self.build_directory}/uf2-samdx1/build/{self.name}"
         )
-        print(f"Writing J-Link debug profile to {jlink_debug_file}")
-        with open(jlink_debug_file, "w", encoding="UTF-8") as json_file:
-            json.dump(debug_custom, json_file, indent=2)
-
-        jlink_ocd_cfg = f"{scripts_dir}/openocd/jlink_samdx1.cfg"
-        daplink_ocd_cfg = f"{scripts_dir}/openocd/daplink_samdx1.cfg"
-        for file, source in zip(
-            [jlink_ocd_cfg, daplink_ocd_cfg], ["jlink", "cmsis-dap"]
-        ):
-            with open(file, "w", encoding="UTF-8") as ocd_script:
-                # write header
-                ocd_script.write("#\n#  Arduino SAMDx1 OpenOCD script.\n#\n\n")
-                # set the interface source
-                ocd_script.write(f"source [find interface/{source}.cfg]\n")
-                # select SWD as the transport
-                ocd_script.write("transport select swd\n\n")
-                # set the chip name
-                ocd_script.write(
-                    f"# chip name\nset CHIPNAME {self.d['chip_variant'].lower()}\n\n"
-                )
-                # set the source script
-                if self.chip_family == "SAMD21":
-                    ocd_script.write("source [find target/at91samdXX.cfg]\n")
-                else:
-                    ocd_script.write("source [find target/atsame5x.cfg]\n")
+        self.d["bootloader_buildname"] = (
+            f"bootloader-{self.name}-{self.d['uf2_version_tag']}"
+        )
+        self.d["bootloader_versioned_name"] = (
+            f"bootloader-{self.name}-{self.version}-uf2{self.d['uf2_version_tag']}"
+        )
+        self.d["bootloader_filename"] = f"{self.d['bootloader_versioned_name']}.bin"
 
     # creates boards.txt, platform.txt and README.md files, by processing template files in package directory
     # these are used by the Arduino IDE
-    def write_boards_txt(self):
+    def write_platform_templates(self):
         # if necessary, add entries for cache and speed menus
         self.d["menu_cache"] = ""
         self.d["menu_speed"] = ""
@@ -268,20 +245,59 @@ class SAMDconfig:
             self.d["menu_speed"] += f"{speed_prefix}.200=200 MHz (overclock)\n"
             self.d["menu_speed"] += f"{speed_prefix}.200.build.f_cpu=200000000L\n"
 
-        # substitute all values in the template board.txt file
-        self.process_file(
-            f"{self.package_directory}/boards_TEMPLATE.txt",
-            f"{self.package_directory}/boards.txt",
-        )
-        # substitute all values in the template platfotm.txt file
-        self.process_file(
-            f"{self.package_directory}/platform_TEMPLATE.txt",
-            f"{self.package_directory}/platform.txt",
-        )
+        # Run substitutions in all _TEMPLATE files
         self.process_file(
             f"{self.package_directory}/README_TEMPLATE.md",
             f"{self.package_directory}/README.md",
         )
+
+        template_src_files = sorted(
+            glob.glob(f"{self.package_directory}" + "*_TEMPLATE*", recursive=True)
+        )
+        template_src_files = [
+            os.path.join(dp, f)
+            for dp, dn, filenames in os.walk(self.package_directory)
+            for f in filenames
+            if "_TEMPLATE" in f
+        ]
+        for file_name in template_src_files:
+            if os.path.isfile(file_name):
+                print(f"Processing tempate for {file_name}")
+                self.process_file(
+                    file_name,
+                    file_name.replace("_TEMPLATE", ""),
+                )
+
+    def check_uf2_version(self):
+        print("Checking the tag of the latest release of Adafruit's uf2 repo...")
+        response = requests.get(
+            "https://api.github.com/repos/adafruit/uf2-samdx1/releases/latest"
+        )
+        latest_release_tag = response.json()["tag_name"]
+        self.d["uf2_version_tag"] = latest_release_tag
+        print(
+            f"The latest release of Adafruit's uf2 repo is tag {latest_release_tag}, published {response.json()['published_at']}"
+        )
+
+    def clone_uf2_repo(self):
+        print("Cloning Adafruit's uf2 repo...")
+        with open(
+            f"{self.build_directory}/bootloader_build_log.txt", "w", encoding="UTF-8"
+        ) as logfile:
+            command = f"git clone --depth 1 --branch {self.d['uf2_version_tag']} https://github.com/adafruit/uf2-samdx1.git {self.build_directory}/uf2-samdx1"
+            git_process = subprocess.run(
+                command,
+                shell=True,
+                stdout=logfile,
+                stderr=subprocess.STDOUT,
+                text=True,
+            )
+            if git_process.returncode:
+                print(
+                    "Cloning Adafruit uf2 repo failed. Please see the log file for details"
+                )
+            else:
+                print("Successfully cloned latest Adafruit uf2 repo")
 
     # creates board.mk file in given directory
     # this is needed to make/build the bootloader
@@ -292,7 +308,7 @@ class SAMDconfig:
             board_mk.write("CHIP_VARIANT = " + self.d["chip_variant"] + "\n")
 
     # creates board_config.h file in given directory
-    # this is used to build the bootloader
+    # this is used to make/build the bootloader
     def write_board_config(self, dest_directory):
         print(f"Writing board_config.h file to {dest_directory}/board_config.h")
         with open(
@@ -360,84 +376,6 @@ class SAMDconfig:
                 padded_key = key.ljust(27).upper()
                 board_config.write(f"#define {padded_key} {value}\n")
             board_config.write("#endif\n")
-
-    # creates board_name.json file in given directory
-    # this is for PlatformIO
-    def write_board_json(self):
-        board_json = {
-            "name": self.d["board_name_long"],
-            "url": self.d["info_url"],
-            "vendor": self.d["vendor_name_long"],
-            "frameworks": ["arduino"],
-            "build": {
-                "arduino": {"ldscript": "flash_with_bootloader.ld"},
-                "core": "adafruit",
-                "cpu": "cortex-m4",
-                "extra_flags": self.d["extra_flags"].split(" "),
-                "f_cpu": "120000000L",
-                "hwids": [[self.d["usb_vid"], self.d["usb_pid"]]],
-                "mcu": self.chip_variant.lower(),
-                "system": "samd",
-                "usb_product": self.d["board_name_long"],
-                "variant": self.d["board_name"],
-            },
-            "upload": {
-                "disable_flushing": True,
-                "native_usb": True,
-                "protocol": "sam-ba",
-                "protocols": ["sam-ba", "jlink", "atmel-ice"],
-                "require_upload_port": True,
-                "use_1200bps_touch": True,
-                "wait_for_upload_port": True,
-            },
-            "debug": {
-                "jlink_device": self.chip_variant.lower(),
-                "openocd_chipname": f"at91{self.chip_variant.lower()}",
-                "openocd_target": (
-                    "at91samdXX" if self.chip_family == "SAMD21" else "atsame5x"
-                ),
-                "svd_path": f"{self.chip_variant}.svd",
-            },
-        }
-
-        # add MCU-specific parameters
-        if self.chip_family == "SAMD21":
-            # set the RAM and offset sizes
-            board_json["upload"]["maximum_ram_size"] = 32768
-            board_json["upload"]["maximum_size"] = 262144
-            board_json["upload"]["offset_address"] = "0x2000"
-        elif self.is_samd51:
-            # enable the cache
-            board_json["build"]["extra_flags"].append("-DENABLE_CACHE")
-            # remove the duplicate flags added by default by PlatformIO
-            board_json["build"]["extra_flags"] = [
-                flag
-                for flag in board_json["build"]["extra_flags"]
-                if flag not in ["-mfloat-abi=hard", "-mfpu=fpv4-sp-d16"]
-            ]
-            # SAMD51J20A, SAMD51P20A, and SAMD51N20A have 1032192 flash size (1024kB program memory size)
-            if self.chip_variant in ["SAMD51J20A", "SAMD51P20A", "SAMD51N20A"]:
-                # set the RAM and offset sizes
-                board_json["upload"]["maximum_ram_size"] = 262144
-                board_json["upload"]["maximum_size"] = 1048576
-                board_json["upload"]["offset_address"] = "0x4000"
-            # other SAMD51's have 507904 flash size (512kB program memory size)
-            else:
-                # set the RAM and offset sizes
-                board_json["upload"]["maximum_ram_size"] = 196608
-                board_json["upload"]["maximum_size"] = 524288
-                board_json["upload"]["offset_address"] = "0x4000"
-        # now save to json
-        pio_boards_json_name = (
-            self.build_directory
-            + "/"
-            + self.d["vendor_name"]
-            + "_"
-            + self.d["board_name"]
-            + ".json"
-        )
-        with open(pio_boards_json_name, "w", encoding="UTF-8") as boards_json:
-            json.dump(board_json, boards_json, indent=2)
 
     # gets all necessary paths for GCC and make and adds them to PATH
     # returns environment with these paths
@@ -521,11 +459,8 @@ class SAMDconfig:
             else:
                 print("Successfully built bootloader")
 
-        # copy built bootloader
+        # move back to base directory
         os.chdir("../..")
-        bootloader_dir = f"{self.build_directory}/uf2-samdx1/build/{self.name}"
-        bootloader_basename = f"bootloader-{self.name}-{self.d['uf2_version_tag']}"
-        return (bootloader_dir, bootloader_basename)
 
     # compress already constructed package directory into a zip archive and
     # record archive size and SHA256 checksum

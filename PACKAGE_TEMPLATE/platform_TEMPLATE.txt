@@ -195,7 +195,7 @@ tools.openocd.erase.pattern=
 
 tools.openocd.bootloader.params.verbose=-d3
 tools.openocd.bootloader.params.quiet=-d0
-tools.openocd.bootloader.pattern="{path}/{cmd}" {bootloader.verbose} -s "{path}/share/openocd/scripts/" -f "{runtime.platform.path}/{build.openocdscript}" -c "telnet_port disabled; init; halt; $_FLASHDRIVER bootloader 0; program {{runtime.platform.path}/bootloaders/{bootloader.file}} verify reset; shutdown"
+tools.openocd.bootloader.pattern="{path}/{cmd}" {bootloader.verbose} -s "{path}/share/openocd/scripts/" -f "{runtime.platform.path}/{build.openocdscript}" -c "telnet_port disabled; init; halt; $$_FLASHDRIVER bootloader 0; program {{runtime.platform.path}/bootloaders/{bootloader.file}} verify reset; shutdown"
 
 #
 # OpenOCD sketch upload - version with configurable bootloader size
@@ -221,7 +221,7 @@ tools.openocd-withbootsize.erase.pattern=
 
 tools.openocd-withbootsize.bootloader.params.verbose=-d3
 tools.openocd-withbootsize.bootloader.params.quiet=-d0
-tools.openocd-withbootsize.bootloader.pattern="{path}/{cmd}" {bootloader.verbose} -s "{path}/share/openocd/scripts/" -f "{runtime.platform.path}/{build.openocdscript}" -c "telnet_port disabled; init; halt; $_FLASHDRIVER bootloader 0; program {{runtime.platform.path}/bootloaders/{bootloader.file}} verify reset; $_FLASHDRIVER bootloader {bootloader.size}; shutdown"
+tools.openocd-withbootsize.bootloader.pattern="{path}/{cmd}" {bootloader.verbose} -s "{path}/share/openocd/scripts/" -f "{runtime.platform.path}/{build.openocdscript}" -c "telnet_port disabled; init; halt; $$_FLASHDRIVER bootloader 0; program {{runtime.platform.path}/bootloaders/{bootloader.file}} verify reset; $$_FLASHDRIVER bootloader {bootloader.size}; shutdown"
 
 # ----------------------------------------
 # Debugger configuration (general options)
