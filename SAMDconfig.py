@@ -185,7 +185,8 @@ class SAMDconfig:
 
     def setup_build_directory(self, dirname):
         self.build_directory = dirname
-        self.package_directory = f"{dirname}/{self.version}"
+        # self.package_directory = f"{dirname}/{self.version}"
+        self.package_directory = f"{dirname}/current"
         # remove old build directory, if it exists
         if os.path.exists(dirname):
             print("Removing old build directory")
@@ -485,7 +486,8 @@ class SAMDconfig:
             f"{self.build_directory}/{self.name}-{self.version}",
             "zip",
             root_dir=self.build_directory,
-            base_dir=self.version,
+            # base_dir=self.version,
+            base_dir="current",
         )
         archive_size = os.path.getsize(zip_archive)
         # compute hash:
