@@ -1,6 +1,6 @@
 {
   "servertype": "jlink",
-  "device": "ATSAMD51G18",
+  "device": "SAMD51N19A",
   "interface": "SWD",
   "serverpath": "JLinkGDBServer"
 }
