@@ -29,7 +29,7 @@
   },
   "debug": {
     "jlink_device": "$chip_variant_lower",
-    "write_platform_templates": "$chip_variant",
+    "openocd_chipname": "$chip_variant",
     "openocd_target": "$openocd_target",
     "svd_path": "$chip_variant.svd"
   }

@@ -57,6 +57,9 @@ class SAMDconfig:
             self.d["chip_family"] == "SAME51"
         )
         self.d["chip_variant_lower"] = self.d["chip_variant"].lower()
+        self.d["openocd_driver"] = (
+            "at91samd" if self.chip_family == "SAMD21" else "atsame5"
+        )
         self.d["openocd_target"] = (
             "at91samdXX" if self.chip_family == "SAMD21" else "atsame5x"
         )
@@ -105,7 +108,7 @@ class SAMDconfig:
                 self.d["flash_size"] = (
                     507904  # 0x0007C000, not including 16kB bootloader space
                 )
-                self.d["ram_size"] = 1966088  # 0x00030000
+                self.d["ram_size"] = 196608  # 0x00030000
                 self.d["maximum_size"] = (
                     524288  # 0x00080000, including 16kB bootloader space
                 )
@@ -130,8 +133,9 @@ class SAMDconfig:
             raise RuntimeError("Invalid MCU family")
 
         # convert to some strings needed for templates
-        self.d["flash_size_hex"] = hex(self.d["flash_size"])
-        self.d["ram_size_hex"] = hex(self.d["ram_size"])
+        self.d["maximum_size_hex"] = f"{self.d['maximum_size']:#0{10}x}"
+        self.d["flash_size_hex"] = f"{self.d['flash_size']:#0{10}x}"
+        self.d["ram_size_hex"] = f"{self.d['ram_size']:#0{10}x}"
 
         # add extra GCC flags
         if "crystalless" in self.d.keys() and self.d["crystalless"] != "0":
@@ -152,6 +156,8 @@ class SAMDconfig:
             # enable the cache
             # this is done in a special cache flag for the Arduino IDE, but in the build flags for PlatformIO
             self.d["extra_flags_pio"].append("-DENABLE_CACHE")
+        # convert to json-esque string
+        self.d["extra_flags_pio"] = json.dumps(self.d["extra_flags_pio"])
 
     def check_missing_values(self, dictionary):
         for key, value in dictionary.items():
@@ -253,9 +259,6 @@ class SAMDconfig:
             f"{self.package_directory}/README.md",
         )
 
-        template_src_files = sorted(
-            glob.glob(f"{self.package_directory}" + "*_TEMPLATE*", recursive=True)
-        )
         template_src_files = [
             os.path.join(dp, f)
             for dp, dn, filenames in os.walk(self.package_directory)
@@ -269,6 +272,17 @@ class SAMDconfig:
                     file_name,
                     file_name.replace("_TEMPLATE", ""),
                 )
+
+        # rename the pio boards file
+        pio_boards_json_name = (
+            self.package_directory
+            + "/"
+            + self.d["vendor_name"]
+            + "_"
+            + self.d["board_name"]
+            + ".json"
+        )
+        os.rename(f"{self.package_directory}/pio_board.json", pio_boards_json_name)
 
     def check_uf2_version(self):
         print("Checking the tag of the latest release of Adafruit's uf2 repo...")

@@ -15,6 +15,8 @@ transport select swd
 # chip name
 set CHIPNAME samd21g18a
 
+set _FLASHDRIVER at91samd
+
 source [find target/at91samdXX.cfg]
 
 # The SAMD21 has 2 32-bit "fuses", aka User Rows, USER_WORD, or Configuration Bits
