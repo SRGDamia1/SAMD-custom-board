@@ -2,7 +2,7 @@
 
 Here are two different sets of instructions for installing the bootloader onto a SAMD device using either OpenOCD and a DAPLink Device or a J-Link Edu Mini and J-Flash Lite.
 
-The paths are written for windows. You should change your username in the path from `{user}` to your own user directory and `{repo_path}` to wherever you have this repo installed.
+These paths are my own paths on my personal work computer.
 
 ## Fuses and Bootloader Protection
 
@@ -42,14 +42,14 @@ The OpenOCD script from the fuses on the SAMD51 started with the SAMD21 script, 
 - Power your target board
 - Open a terminal for OpenOCD (OpenOCD acts as the GDB server)
 - Within the terminal, chage directories to the the installation directory of OpenOCD within the Arduino15 directory
-  - `cd "C:\Users\{user}\AppData\Local\Arduino15\packages\arduino\tools\openocd\0.11.0-arduino2\bin"`
+  - `cd "C:\Users\sdamiano\AppData\Local\Arduino15\packages\arduino\tools\openocd\0.11.0-arduino2\bin"`
 - Use this terminal for all of the remaining steps!
 
 ### Unlock the BOOTPROT "fuses"
 
 NOTE: If you are using a SAMD/E-51 board and you are 100% certain that your BOOTPROT size is properly set for the UF2 bootloader, you can skip this.
 
-- Open the file `{repo_path}\fuses\openocd\samd21_fuses.tcl` or `{repo_path}\fuses\openocd\samd51_fuses.tcl` in any text editor.
+- Open the file `C:\Users\sdamiano\Documents\GitHub\EnviroDIY\SAMD-custom-board\fuses\openocd\samd21_fuses.tcl` or `C:\Users\sdamiano\Documents\GitHub\EnviroDIY\SAMD-custom-board\fuses\openocd\samd51_fuses.tcl` in any text editor.
 - Within the tcl file, change the `set bootprot` statement (line 8) to the correct value for 0kb protected
   - `set bootprot 0x7` for SAMD-21
   - `set bootprot 0x0F` for SAMD-51
@@ -58,18 +58,18 @@ NOTE: If you are using a SAMD/E-51 board and you are 100% certain that your BOOT
   - ie `set CHIPNAME samd51n19a` for the SAMD51N19A on the Stonefly
 - Save the changes to your tcl file
 - Run OpenOCD with your modified fuse writing script:
-  - SAMD21: `./openocd -s ..\share\openocd\scripts\ -f "{repo_path}\fuses\openocd\samd21_fuses.tcl"`
-  - SAMD51: `./openocd -s ..\share\openocd\scripts\ -f "{repo_path}\fuses\openocd\samd51_fuses.tcl"`
+  - SAMD21: `./openocd -s ..\share\openocd\scripts\ -f "C:\Users\sdamiano\Documents\GitHub\EnviroDIY\SAMD-custom-board\fuses\openocd\samd21_fuses.tcl"`
+  - SAMD51: `./openocd -s ..\share\openocd\scripts\ -f "C:\Users\sdamiano\Documents\GitHub\EnviroDIY\SAMD-custom-board\fuses\openocd\samd51_fuses.tcl"`
 
 ### Write the Bootloader
 
 - Run OpenOCD with configuration for your board:
-  - `./openocd -s ..\share\openocd\scripts\ -f "{repo_path}\build\0.0.1\scripts\openocd\daplink_samdx1.cfg"`
+  - `./openocd -s ..\share\openocd\scripts\ -f "C:\Users\sdamiano\Documents\GitHub\EnviroDIY\SAMD-custom-board\build\0.0.1\scripts\openocd\daplink_samdx1.cfg"`
 - If all goes well, you should see a message that the programmer is listening on port 3333 for gdb connections
 
 - Open a *second* terminal for the GDB client session
 - Navigate to the installation director of arm-none-eabi-gcc
-  - `cd "C:\Users\{user}\AppData\Local\Arduino15\packages\adafruit\tools\arm-none-eabi-gcc\9-2019q4\bin"`
+  - `cd "C:\Users\sdamiano\AppData\Local\Arduino15\packages\adafruit\tools\arm-none-eabi-gcc\9-2019q4\bin"`
 - Start the GDB Client
   - `./arm-none-eabi-gdb`
 - Once within the GDB, connect with OpenOCD server using:
@@ -91,7 +91,7 @@ NOTE: If you are using a SAMD/E-51 board and you are 100% certain that your BOOT
   - `monitor $_FLASHDRIVER chip-erase`
 - Program the bin file:
   - **NOTE**: *On windows, you need to flip the direction of the slashes from `\` to `/` for this command!*
-  - `monitor program "{repo_path}/build/bootloader-{board_name}-{uf2_version}" verify reset`
+  - `monitor program "C:/Users/sdamiano/Documents/GitHub/EnviroDIY/SAMD-custom-board/build/bootloader-stonefly_m4-v3.16.0.bin" verify reset`
 - Shutdown the OpenOCD server:
   - `monitor shutdown`
 - Reset the target device by pressing reset buttons and you should see that a COM appeared
@@ -105,15 +105,15 @@ NOTE: If you are using a SAMD/E-51 board and you skipped unlocking fuses, you ca
 
 This is essentially the same procedure as un-locking the boot protection fuses, except we set the value of the boot protection to the size of the bootloader instead of 0.
 
-- Open the file `{repo_path}\fuses\openocd\samd21_fuses.tcl` or `{repo_path}\fuses\openocd\samd51_fuses.tcl` in any text editor.
+- Open the file `C:\Users\sdamiano\Documents\GitHub\EnviroDIY\SAMD-custom-board\fuses\openocd\samd21_fuses.tcl` or `C:\Users\sdamiano\Documents\GitHub\EnviroDIY\SAMD-custom-board\fuses\openocd\samd51_fuses.tcl` in any text editor.
 - Within the tcl file, change the `set bootprot` statement (line 8) to the correct value for the size of the bootloader
   - `set bootprot 0x2` for 8kb protection for the SAMD-21
   - `set bootprot 0x0D` for 16kB protection on the SAMD-51
     - NOTE: *Use capital letters for the hex values:* `0x0D` **NOT** `0x0d`
 - Save the changes to your tcl file
 - Run OpenOCD with your modified fuse writing script:
-  - SAMD21: `./openocd -s ..\share\openocd\scripts\ -f "{repo_path}\fuses\openocd\samd21_fuses.tcl"`
-  - SAMD51: `./openocd -s ..\share\openocd\scripts\ -f "{repo_path}\fuses\openocd\samd51_fuses.tcl"`
+  - SAMD21: `./openocd -s ..\share\openocd\scripts\ -f "C:\Users\sdamiano\Documents\GitHub\EnviroDIY\SAMD-custom-board\fuses\openocd\samd21_fuses.tcl"`
+  - SAMD51: `./openocd -s ..\share\openocd\scripts\ -f "C:\Users\sdamiano\Documents\GitHub\EnviroDIY\SAMD-custom-board\fuses\openocd\samd51_fuses.tcl"`
 
 ## Install the Bootloader with OpenOCD and a DAPLink Device (v2)
 
@@ -125,8 +125,8 @@ This is essentially the same procedure as un-locking the boot protection fuses, 
 - Within the terminal, chage directories to the the installation directory of OpenOCD within the Arduino15 directory
   - `cd "C:\Users\{user}\AppData\Local\Arduino15\packages\arduino\tools\openocd\0.11.0-arduino2\bin"`
 - Use this terminal for all of the remaining steps!
-- SAMD51: `./openocd -d3 --s ..\share\openocd\scripts\ -f "{repo_path}\build\0.0.1\scripts\openocd\daplink_samdx1.cfg" -c "telnet_port disabled; init; reset halt; halt; $_FLASHDRIVER chip-erase; $_FLASHDRIVER bootloader 0; program {{repo_path}/build/bootloader-{board_name}-{uf2_version}} verify reset; $_FLASHDRIVER bootloader 16384; shutdown"`
-- SAMD21: `./openocd -d3 --s ..\share\openocd\scripts\ -f "{repo_path}\build\0.0.1\scripts\openocd\daplink_samdx1.cfg" -c "telnet_port disabled; init; reset halt; halt; $_FLASHDRIVER chip-erase; $_FLASHDRIVER bootloader 0; program {{repo_path}/build/bootloader-{board_name}-{uf2_version}} verify reset; $_FLASHDRIVER bootloader 8192; shutdown"`
+- SAMD51: `./openocd -d3 --s ..\share\openocd\scripts\ -f "C:\Users\sdamiano\Documents\GitHub\EnviroDIY\SAMD-custom-board\build\0.0.1\scripts\openocd\daplink_samdx1.cfg" -c "telnet_port disabled; init; reset halt; halt; $_FLASHDRIVER chip-erase; $_FLASHDRIVER bootloader 0; program {C:\Users\sdamiano\Documents\GitHub\EnviroDIY\SAMD-custom-board/build/bootloader-{board_name}-{uf2_version}} verify reset; $_FLASHDRIVER bootloader 16384; shutdown"`
+- SAMD21: `./openocd -d3 --s ..\share\openocd\scripts\ -f "C:\Users\sdamiano\Documents\GitHub\EnviroDIY\SAMD-custom-board\build\0.0.1\scripts\openocd\daplink_samdx1.cfg" -c "telnet_port disabled; init; reset halt; halt; $_FLASHDRIVER chip-erase; $_FLASHDRIVER bootloader 0; program {C:\Users\sdamiano\Documents\GitHub\EnviroDIY\SAMD-custom-board/build/bootloader-{board_name}-{uf2_version}} verify reset; $_FLASHDRIVER bootloader 8192; shutdown"`
 
 ## Install the Bootloader with J-Link Edu Mini and J-Flash Lite
 
@@ -158,8 +158,8 @@ This would be significanly better (though much more complex) than hard-writing a
 ### Unlock the BOOTPROT "fuses"
 
 - Load the memory file that will clear the boot loader protection fuse
-  - for SAMD21: `loadfile {repo_path}\fuses\jlink\SAMD21_clear_BOOTPROT.mot`
-  - for SAMD51: `loadfile {repo_path}\fuses\jlink\SAMD51_clear_BOOTPROT.mot`
+  - for SAMD21: `loadfile C:\Users\sdamiano\Documents\GitHub\EnviroDIY\SAMD-custom-board\fuses\jlink\SAMD21_clear_BOOTPROT.mot`
+  - for SAMD51: `loadfile C:\Users\sdamiano\Documents\GitHub\EnviroDIY\SAMD-custom-board\fuses\jlink\SAMD51_clear_BOOTPROT.mot`
 - Reset the target
   - `r`
 
@@ -170,14 +170,14 @@ This would be significanly better (though much more complex) than hard-writing a
 - Reset the target
   - `r`
 - Upload the bootloader file to address 0
-  - `loadbin "{repo_path}\build\bootloader-stonefly_m4-v3.16.0.bin",0`
+  - `loadbin "C:\Users\sdamiano\Documents\GitHub\EnviroDIY\SAMD-custom-board\build\bootloader-stonefly_m4-v3.16.0.bin",0`
 - Reset the target
   - `r`
 
 ### Re-Lock the BOOTPROT "fuses"
 
 - Load the memory file that will set the boot loader protection fuse to 8kb
-  - for SAMD21: `loadfile {repo_path}\fuses\jlink\SAMD21_set_BOOTPROT_8k.mot`
-  - for SAMD51: `loadfile {repo_path}\fuses\jlink\SAMD51_set_BOOTPROT_16k.mot`
+  - for SAMD21: `loadfile C:\Users\sdamiano\Documents\GitHub\EnviroDIY\SAMD-custom-board\fuses\jlink\SAMD21_set_BOOTPROT_8k.mot`
+  - for SAMD51: `loadfile C:\Users\sdamiano\Documents\GitHub\EnviroDIY\SAMD-custom-board\fuses\jlink\SAMD51_set_BOOTPROT_16k.mot`
 - Reset the target
   - `r`
