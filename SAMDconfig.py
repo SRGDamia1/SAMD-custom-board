@@ -200,12 +200,14 @@ class SAMDconfig:
         for file_name in fuse_src_files:
             if os.path.isfile(file_name) and self.chip_family.lower() not in file_name:
                 os.remove(file_name)
+
+        # rename the variants directory
         variants_dir = self.package_directory + "/variants"
         board_variant = f"{variants_dir}/{self.name}"
-
+        os.rename(variants_dir + "/your_variant", board_variant)
         # move the hand written variants files into the board variant directory
-        shutil.copy2("board_data/variant.cpp", f"{board_variant}.cpp")
-        shutil.copy2("board_data/variant.h", f"{board_variant}.h")
+        shutil.copy2("board_data/variant.cpp", f"{board_variant}")
+        shutil.copy2("board_data/variant.h", f"{board_variant}")
 
         # Add filenames to the dictionary
         self.d["bootloader_dir"] = (

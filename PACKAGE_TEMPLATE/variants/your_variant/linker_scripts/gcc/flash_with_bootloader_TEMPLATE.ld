@@ -25,8 +25,8 @@
  */
 MEMORY
 {
-  FLASH (rx) : ORIGIN = 0x00000000, LENGTH = 0x00040000
-  RAM (rwx) : ORIGIN = 0x20000000, LENGTH = 0x00008000
+  FLASH (rx) : ORIGIN = 0x00000000+$offset, LENGTH = $maximum_size_hex-$offset /* Offset by space used by bootloader */
+  RAM (rwx) : ORIGIN = 0x20000000, LENGTH = $ram_size_hex
 }
 
 /* Linker script to place sections and symbol values. Should be used together
@@ -58,7 +58,6 @@ MEMORY
  *   __StackLimit
  *   __StackTop
  *   __stack
- *   __ram_end__
  */
 ENTRY(Reset_Handler)
 
@@ -67,6 +66,10 @@ SECTIONS
 	.text :
 	{
 		__text_start__ = .;
+
+		KEEP(*(.sketch_boot))
+
+		. = ALIGN($offset);
 
 		KEEP(*(.isr_vector))
 		*(.text*)
