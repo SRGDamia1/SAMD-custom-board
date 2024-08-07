@@ -1,11 +1,19 @@
 # change forceupdate to 1 to update the fuses to factory default values specified below
-set forceupdate 0
+if {[info exists forceupdate]} {
+    puts $forceupdate
+} else {
+    set forceupdate 0
+}
 
 # if NOT forcing an updated (`set forceupdate 0`), set the size of the bootloader to protect here
 # see datasheet table 22-2 for options
 # 0x7, 0b111 = 0 bytes protected (not locked)
 # 0x2, 0b010 = 8KB protected (the size of the UF2 SAMD21 bootloader)
-set bootprot 0x7
+if {[info exists bootprot]} {
+    puts $bootprot
+} else {
+    set bootprot 0x7
+}
 
 #  Set up the Transport and Chip
 
