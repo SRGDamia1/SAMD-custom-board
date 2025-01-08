@@ -275,17 +275,16 @@ class SAMDconfig:
                 )
 
         # rename the pio boards file
+        boards_dir = self.package_directory + "/boards"
         pio_boards_json_name = (
-            self.package_directory
+            boards_dir
             + "/"
             + self.d["vendor_name"]
             + "_"
             + self.d["board_name"]
             + ".json"
         )
-        os.rename(
-            f"{self.package_directory}/boards/pio_board.json", pio_boards_json_name
-        )
+        os.rename(f"{boards_dir}/pio_board.json", pio_boards_json_name)
 
     def check_uf2_version(self):
         print("Checking the tag of the latest release of Adafruit's uf2 repo...")
