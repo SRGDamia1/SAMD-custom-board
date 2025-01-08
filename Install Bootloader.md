@@ -67,6 +67,11 @@ Explanation of Command/Arguments:
 - `-f "{repo_path}\build\current\scripts\fuses\openocd\samd51_fuses.tcl"` runs the file with the fuse changing script
 - See: https://openocd.org/doc/html/Running.html#Running
 
+#### Unlock and Factory Reset the Bootloader Fuses
+- Run the following OpenOCD command:
+  - SAMD21: `./openocd -d2 -s ..\share\openocd\scripts\ -c "set forceupdate 1; set bootprot 0x7" -f "{repo_path}\build\current\scripts\fuses\openocd\samd21_fuses.tcl"`
+  - SAMD51: `./openocd -d2 -s ..\share\openocd\scripts\ -c "set forceupdate 1; set bootprot 0x0F" -f "{repo_path}\build\current\scripts\fuses\openocd\samd51_fuses.tcl"`
+
 ### Write the Bootloader
 
 - Run OpenOCD with these commands to program the board
