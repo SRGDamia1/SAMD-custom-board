@@ -67,10 +67,15 @@ Explanation of Command/Arguments:
 - `-f "{repo_path}\build\current\scripts\fuses\openocd\samd51_fuses.tcl"` runs the file with the fuse changing script
 - See: https://openocd.org/doc/html/Running.html#Running
 
+#### Unlock and Factory Reset the Bootloader Fuses
+- Run the following OpenOCD command:
+  - SAMD21: `./openocd -d2 -s ..\share\openocd\scripts\ -c "set forceupdate 1; set bootprot 0x7" -f "{repo_path}\build\current\scripts\fuses\openocd\samd21_fuses.tcl"`
+  - SAMD51: `./openocd -d2 -s ..\share\openocd\scripts\ -c "set forceupdate 1; set bootprot 0x0F" -f "{repo_path}\build\current\scripts\fuses\openocd\samd51_fuses.tcl"`
+
 ### Write the Bootloader
 
 - Run OpenOCD with these commands to program the board
-  - ```./openocd -d2 -s {repo_path}\build\current\scripts -f "{repo_path}\build\current\scripts\openocd\daplink_samdx1.cfg" -c "telnet_port disabled; init; reset halt; `$_FLASHDRIVER chip-erase; program {repo_path}/build/current/bootloaders/{board_name}/bootloader-{board_name}-{board_version}-{uf2_version}.bin verify reset; shutdown"```
+  - ```./openocd -d2 -s ..\share\openocd\scripts\ -f "{repo_path}\build\current\scripts\openocd\daplink_samdx1.cfg" -c "telnet_port disabled; init; reset halt; `$_FLASHDRIVER chip-erase; program {repo_path}/build/current/bootloaders/{board_name}/bootloader-{board_name}-{board_version}-{uf2_version}.bin verify reset; shutdown"```
 
 Explanation of Command/Arguments:
 
@@ -117,8 +122,8 @@ See the locking section for a detailed explanation of the commands
 - Within the terminal, chage directories to the the installation directory of OpenOCD within the Arduino15 directory
   - `cd "C:\Users\{user}\AppData\Local\Arduino15\packages\arduino\tools\openocd\0.11.0-arduino2\bin"`
 - Run the following OpenOCD command:
-  - SAMD51: ```./openocd -d2 -s {repo_path}\build\current\scripts -f "{repo_path}\build\current\scripts\openocd\daplink_samdx1.cfg" -c "telnet_port disabled; init; reset halt; `$_FLASHDRIVER bootloader 0; `$_FLASHDRIVER chip-erase; reset; program {repo_path}/build/current/bootloaders/{board_name}/bootloader-{board_name}-{board_version}-{uf2_version}.bin verify reset; reset halt; `$_FLASHDRIVER bootloader 16384; shutdown"```
-  - SAMD21: ```./openocd -d2 -s {repo_path}\build\current\scripts -f "{repo_path}\build\current\scripts\openocd\daplink_samdx1.cfg" -c "telnet_port disabled; init; reset halt; `$_FLASHDRIVER bootloader 0; `$_FLASHDRIVER chip-erase; program {repo_path}/build/current/bootloaders/{board_name}/bootloader-{board_name}-{board_version}-{uf2_version}.bin verify reset; reset halt; `$_FLASHDRIVER bootloader 8192; shutdown"```
+  - SAMD51: ```./openocd -d2 -s ..\share\openocd\scripts\ -f "{repo_path}\build\current\scripts\openocd\daplink_samdx1.cfg" -c "telnet_port disabled; init; reset halt; `$_FLASHDRIVER bootloader 0; `$_FLASHDRIVER chip-erase; reset; program {repo_path}/build/current/bootloaders/{board_name}/bootloader-{board_name}-{board_version}-{uf2_version}.bin verify reset; reset halt; `$_FLASHDRIVER bootloader 16384; shutdown"```
+  - SAMD21: ```./openocd -d2 -s ..\share\openocd\scripts\ -f "{repo_path}\build\current\scripts\openocd\daplink_samdx1.cfg" -c "telnet_port disabled; init; reset halt; `$_FLASHDRIVER bootloader 0; `$_FLASHDRIVER chip-erase; program {repo_path}/build/current/bootloaders/{board_name}/bootloader-{board_name}-{board_version}-{uf2_version}.bin verify reset; reset halt; `$_FLASHDRIVER bootloader 8192; shutdown"```
 
 Explanation of Command/Arguments:
 
