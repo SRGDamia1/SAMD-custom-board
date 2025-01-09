@@ -483,8 +483,10 @@ class SAMDconfig:
     # compress already constructed package directory into a zip archive and
     # record archive size and SHA256 checksum
     def package_archive(self):
+        # archive_filename = f"{self.build_directory}/{self.name}-{self.version}"
+        archive_filename = f"{self.build_directory}/{self.d['package_name'].replace(' ','').lower()}-{self.version}"
         zip_archive = shutil.make_archive(
-            f"{self.build_directory}/{self.name}-{self.version}",
+            archive_filename,
             "zip",
             root_dir=self.build_directory,
             # base_dir=self.version,
@@ -500,7 +502,7 @@ class SAMDconfig:
             f"Created package archive, size {archive_size} bytes,\n SHA256 hash: {hash}"
         )
         # add the info to dictionary
-        self.d["archive_filename"] = f"{self.name}-{self.version}.zip"
+        self.d["archive_filename"] = archive_filename
         self.d["archive_size"] = archive_size
         self.d["archive_checksum"] = hash
 
@@ -526,12 +528,12 @@ class SAMDconfig:
             "name": self.d["vendor_name"],
             "maintainer": self.d["vendor_name_long"],
             "websiteURL": self.d["info_url"],
-            "help": {"online": self.d["help_url"]},
             "email": self.d["vendor_email"],
+            "help": {"online": self.d["help_url"]},
             "platforms": [samd_current],
             "tools": [],
         }
-        # FIXME: deal wiht previous versions
+        # FIXME: deal with previous versions
         packages = {"packages": [package]}
         # now save to json
         indexfile_name = (
