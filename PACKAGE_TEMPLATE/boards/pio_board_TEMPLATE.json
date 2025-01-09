@@ -2,6 +2,7 @@
   "name": "$board_name_long",
   "url": "$info_url",
   "vendor": "$vendor_name_long",
+  "platforms": ["atmelsam"],
   "frameworks": ["arduino"],
   "build": {
     "arduino": { "ldscript": "flash_with_bootloader.ld" },
