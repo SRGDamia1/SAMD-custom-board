@@ -517,7 +517,7 @@ class SAMDconfig:
             "architecture": "samd",
             "version": self.d["package_version"],
             "category": "Contributed",
-            "url": "FIXME",
+            "url": self.d["package_url"] + self.d["archive_filename"],
             "archiveFileName": self.d["archive_filename"],
             "checksum": "SHA-256:" + self.d["archive_checksum"],
             "size": self.d["archive_size"],
