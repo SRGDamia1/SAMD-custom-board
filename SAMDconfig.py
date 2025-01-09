@@ -525,7 +525,7 @@ class SAMDconfig:
 
         # create the package structure
         package = {
-            "name": self.d["vendor_name"],
+            "name": self.d["vendor_name_long"],
             "maintainer": self.d["vendor_name_long"],
             "websiteURL": self.d["info_url"],
             "email": self.d["vendor_email"],
