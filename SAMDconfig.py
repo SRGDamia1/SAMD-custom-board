@@ -29,7 +29,7 @@ def remove_readonly(func, path, _):
 class SAMDconfig:
     # constructor
     def __init__(self, filename):
-        # dictionary containign all config data
+        # dictionary containing all config data
         self.d = {}
         self.d["build_date"] = date.today().isoformat()
         # read all values from main sections of config file
@@ -167,7 +167,7 @@ class SAMDconfig:
                 raise RuntimeError("Missing configuration parameters")
 
     # reads template file, does all substitutions from the dictionary, saves result as destination
-    # source and destination shoudl be filenames
+    # source and destination should be filenames
     def process_file(self, source, destination):
 
         # open the template file
