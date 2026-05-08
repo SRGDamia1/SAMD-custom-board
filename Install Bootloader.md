@@ -114,7 +114,7 @@ See the locking section for a detailed explanation of the commands
 
 - Connect the DAPLink device to both your PC and your target board
 - Power your target board, if your DAPLink device cannot provide power
-- Within the terminal, chage directories to the the installation directory of OpenOCD within the Arduino15 directory
+- Within the terminal, change directories to the the installation directory of OpenOCD within the Arduino15 directory
   - `cd "C:\Users\sdamiano\AppData\Local\Arduino15\packages\arduino\tools\openocd\0.11.0-arduino2\bin"`
 - Run the following OpenOCD command:
   - SAMD51: ```./openocd -d2 -s ..\share\openocd\scripts\ -f "C:\Users\sdamiano\Documents\GitHub\EnviroDIY\SAMD-custom-board\build\current\scripts\openocd\daplink_samdx1.cfg" -c "telnet_port disabled; init; reset halt; `$_FLASHDRIVER bootloader 0; `$_FLASHDRIVER chip-erase; reset; program C:/Users/sdamiano/Documents/GitHub/EnviroDIY/SAMD-custom-board/build/current/bootloaders/stonefly_m4/bootloader-stonefly_m4-0.0.4-uf2v3.16.0.bin verify reset; reset halt; `$_FLASHDRIVER bootloader 16384; shutdown"```
@@ -157,7 +157,7 @@ This would be significantly better (though much more complex) than hard-writing 
 - If desired, update the firmware on your J-Link by using the J-Link Configurator program
 
 - Connect the J-Link Edu mini to and your target board with the JTAG cable
-  - Make sure that the JTAG cable is conneced so that the red wire is at the top near where the "1" is printed on the J-Link Edu Mini.  The cable can connect either way (stupid design) so you need to make sure it's connected correctly.
+  - Make sure that the JTAG cable is connected so that the red wire is at the top near where the "1" is printed on the J-Link Edu Mini.  The cable can connect either way (stupid design) so you need to make sure it's connected correctly.
 - Power your target board
 
 ### Connect J-Link to Target

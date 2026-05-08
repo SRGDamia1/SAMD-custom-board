@@ -251,7 +251,7 @@ extern "C"
  *   - `SPI_PAD_2_SCK_3` (0x1) and `SPI_PAD_0_SCK_3` (0x3) are NOT VALID on the SAMD/E 51!
  *
  * In the Adafruit core, hardware SS (slave select) is used by default.
- * This means that the SS pin must be the specified pad on the SERCOM restricting you to using only the single slave attachted to that SS pin.
+ * This means that the SS pin must be the specified pad on the SERCOM restricting you to using only the single slave attached to that SS pin.
  *
  * If you want to use multiple slaves on the same bus, you can disable hardware SPI select.
  * Doing this allows you to use any GPIO pin(s) as the SS pin(s), and requires you to manually set that pin low before communicating with the desired slave.
@@ -263,7 +263,7 @@ extern "C"
  * // Set the CTRLB register
  * SERCOM#->SPI.CTRLB.bit.MSSEN = 0; // Disable MSSEN
  * while( SERCOM#->SPI.SYNCBUSY.bit.CTRLB == 1 );  // not required, the MSSEN bit is not synchronized
- * // Set the pin periperhal of the SS pin to DIO (just in case it had been PIO_SERCOM or PIO_SERCOM_ALT)
+ * // Set the pin peripheral of the SS pin to DIO (just in case it had been PIO_SERCOM or PIO_SERCOM_ALT)
  * pinPeripheral( ss_pin_number, PIO_DIGITAL);
  * ```
  */
@@ -474,3 +474,5 @@ extern Uart Serial1;
 #define SERIAL_PORT_HARDWARE_OPEN Serial1
 
 #endif /* _VARIANT_SAMD_EXAMPLE_ */
+
+// cSpell:words RXPO DIPO DOPO MSSEN SYNCBUSY PERIPH XCLK LINUXBRIDGE
