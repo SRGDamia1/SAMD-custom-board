@@ -517,8 +517,11 @@ class SAMDconfig:
             "architecture": "samd",
             "version": self.d["package_version"],
             "category": "Contributed",
-            "url": self.d["package_url"] + self.d["archive_filename"],
-            "archiveFileName": self.d["archive_filename"],
+            "url": self.d["package_url"]
+            + self.d["archive_filename"].replace("build/", "")
+            + ".zip",
+            "archiveFileName": self.d["archive_filename"].replace("build/", "")
+            + ".zip",
             "checksum": "SHA-256:" + self.d["archive_checksum"],
             "size": self.d["archive_size"],
             "boards": [{"name": self.d["board_name_long"]}],
@@ -528,7 +531,8 @@ class SAMDconfig:
         # create the package structure
         package = {
             "name": self.d["vendor_name_long"],
-            "maintainer": self.d["vendor_name_long"],
+            # "maintainer": self.d["vendor_name_long"],
+            "maintainer": "Stroud Water Research Center - EnviroDIY",
             "websiteURL": self.d["info_url"],
             "email": self.d["vendor_email"],
             "help": {"online": self.d["help_url"]},

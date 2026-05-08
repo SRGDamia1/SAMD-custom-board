@@ -1,0 +1,22 @@
+{
+  "version": "0.2",
+  "ignorePaths": [],
+  "dictionaryDefinitions": [],
+  "dictionaries": [],
+  "words": [
+    "Adafruit",
+    "crystalless",
+    "EnviroDIY",
+    "MCLK",
+    "neopixel",
+    "QSPI",
+    "SAMD",
+    "SAMD51",
+    "SAME51",
+    "SDCARD",
+    "stonefly",
+    "usart"
+  ],
+  "ignoreWords": [],
+  "import": []
+}
