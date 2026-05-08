@@ -268,7 +268,7 @@ class SAMDconfig:
         ]
         for file_name in template_src_files:
             if os.path.isfile(file_name):
-                print(f"Processing tempate for {file_name}")
+                print(f"Processing template for {file_name}")
                 self.process_file(
                     file_name,
                     file_name.replace("_TEMPLATE", ""),
@@ -404,6 +404,8 @@ class SAMDconfig:
         # find GCC included with Adafruit SAMD package
         gcc_tool_path = (
             new_env["HOME"]
+            if "HOME" in new_env
+            else new_env["USERPROFILE"]
             + "/"
             + self.d["arduino15"]
             + "/packages/adafruit/tools/arm-none-eabi-gcc"

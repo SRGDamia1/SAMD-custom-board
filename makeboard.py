@@ -7,10 +7,12 @@ import shutil
 print("Reading board config...")
 board = SAMDconfig.SAMDconfig("board_data/board-config.ini")
 
+# %%
+# get the latest version of the UF2 repo and check that it is compatible with the board configuration
 print("\nChecking for the latest version of the Adafruit UF-2 Repo")
 board.check_uf2_version()
 
-# setup buidl directory and move there all source files
+# setup build directory and move there all source files
 print("\nCopying sources to build directory...")
 board.setup_build_directory("build")
 
@@ -21,6 +23,7 @@ board.write_platform_templates()
 print("\nCloning the current Adafruit UF2 repo")
 board.clone_uf2_repo()
 
+# %%
 # write config files for bootloader
 print("\nCreating config files for the board bootloader")
 bootloader_config_dir = f"{board.build_directory}/uf2-samdx1/boards/{board.name}"
@@ -28,6 +31,7 @@ os.mkdir(bootloader_config_dir)
 board.write_board_mk(bootloader_config_dir)
 board.write_board_config(bootloader_config_dir)
 
+# %%
 # build bootloader
 print("\nBuilding bootloader...")
 board.build_bootloader()
@@ -76,5 +80,12 @@ board.package_archive()
 print("\nCreating json index file")
 board.write_index_json()
 
+
+# %%
+# clean up build directory by removing all cloned and copied files
 print("\nCleaning cloned and copied files from the build directory")
 board.clean_build_directory()
+
+
+# %%
+print("\nAll done!")
