@@ -7,7 +7,7 @@ These paths are my own paths on my personal work computer.
 ## Fuses and Bootloader Protection
 
 Atmel boards feature protections to prevent the all or sections of the chip from being written.
-For a novice user, it's much safer to keep the bootloader locked so they cannot accidently overwrite it.
+For a novice user, it's much safer to keep the bootloader locked so they cannot accidentally overwrite it.
 BUT, to write a bootloader, you must unlock the BOOTPROT region for programming.
 The settings for the bootloader protection are in sections of memory commonly called "fuses", though you may also see them labeled as "configuration bits" or "user rows."
 There is very little documentation online on how to set the fuses - and most of what is available only applies to the simpler SAMD21.
@@ -41,7 +41,7 @@ The OpenOCD script from the fuses on the SAMD51 started with the SAMD21 script, 
 - Connect the DAPLink device to both your PC and your target board
 - Power your target board
 - Open a terminal for OpenOCD (OpenOCD acts as the GDB server)
-- Within the terminal, chage directories to the the installation directory of OpenOCD within the Arduino15 directory
+- Within the terminal, change directories to the the installation directory of OpenOCD within the Arduino15 directory
   - `cd "C:\Users\sdamiano\AppData\Local\Arduino15\packages\arduino\tools\openocd\0.11.0-arduino2\bin"`
 - Use this terminal for all of the remaining steps!
 
@@ -65,9 +65,10 @@ Explanation of Command/Arguments:
     - `set bootprot 0x0D` for SAMD-51 [0x0D (13) for 16kb protected (the SAMD51 UF2 bootloader is 16kb)]
   - NOTE: *Use capital letters for the hex values:* `0x0F` **NOT** `0x0f`
 - `-f "C:\Users\sdamiano\Documents\GitHub\EnviroDIY\SAMD-custom-board\build\current\scripts\fuses\openocd\samd51_fuses.tcl"` runs the file with the fuse changing script
-- See: https://openocd.org/doc/html/Running.html#Running
+- See: <https://openocd.org/doc/html/Running.html#Running>
 
 #### Unlock and Factory Reset the Bootloader Fuses
+
 - Run the following OpenOCD command:
   - SAMD21: `./openocd -d2 -s ..\share\openocd\scripts\ -c "set forceupdate 1; set bootprot 0x7" -f "C:\Users\sdamiano\Documents\GitHub\EnviroDIY\SAMD-custom-board\build\current\scripts\fuses\openocd\samd21_fuses.tcl"`
   - SAMD51: `./openocd -d2 -s ..\share\openocd\scripts\ -c "set forceupdate 1; set bootprot 0x0F" -f "C:\Users\sdamiano\Documents\GitHub\EnviroDIY\SAMD-custom-board\build\current\scripts\fuses\openocd\samd51_fuses.tcl"`
@@ -147,7 +148,7 @@ See [Tom Magnier's HACKADAY.IO instructions for SAMD bootloaders](https://hackad
 WARNING: Using this procedure will reset all fuses to their default values!  If you've customized your fuses and you want to only change the BOOTPROT fuse, use the OpenOCD method.
 
 TODO: It should be possible to make a J-Link script to read and write the fuses as is done in the OpenOCD method.
-This would be significanly better (though much more complex) than hard-writing a "mot" memory file with the factory settings for the user words/user pages.
+This would be significantly better (though much more complex) than hard-writing a "mot" memory file with the factory settings for the user words/user pages.
 
 ### Install J-Link Software Package
 
@@ -162,7 +163,7 @@ This would be significanly better (though much more complex) than hard-writing a
 ### Connect J-Link to Target
 
 - Start JLink.exe
-- Connect to the microcontroller. You have to specify the device type, SWD interface and you can use the default interface speed.
+- Connect to the micro-controller. You have to specify the device type, SWD interface and you can use the default interface speed.
   - Type `connect` to start the connection process
   - Enter `ATSAMD21G18` for the device (or whatever chip you have)
   - Enter `S` for SWD interface

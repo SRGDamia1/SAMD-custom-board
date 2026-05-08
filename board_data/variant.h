@@ -61,11 +61,17 @@ extern "C"
 #define NUM_DIGITAL_PINS (45u)
 #define NUM_ANALOG_INPUTS (19u)
 #define NUM_ANALOG_OUTPUTS (2u)
-#define analogInputToDigitalPin(p) ((p < 10) ? 66 + (p) : (p < 12) ? 64 + (p)-10 \
-                                                      : (p == 12)  ? 58          \
-                                                      : (p == 13)  ? 19          \
-                                                      : (p < 17)   ? 23 + (p)-17 \
-                                                                   : -1)
+#define analogInputToDigitalPin(p) ((p < 10)    ? 66 + (p) \
+                                    : (p == 10) ? 4        \
+                                    : (p == 11) ? 19       \
+                                    : (p == 12) ? 20       \
+                                    : (p == 13) ? 23       \
+                                    : (p == 14) ? 24       \
+                                    : (p == 15) ? 25       \
+                                    : (p == 16) ? 26       \
+                                    : (p == 17) ? 21       \
+                                    : (p == 18) ? 17       \
+                                                : -1)
 
 #define digitalPinToPort(P) (&(PORT->Group[g_APinDescription[P].ulPort]))
 #define digitalPinToBitMask(P) (1 << g_APinDescription[P].ulPin)
@@ -88,15 +94,15 @@ extern "C"
 #define PIN_LED_8 (8)    // PC26 User Green
 #define PIN_LED_9 (9)    // PC27 User Red
 #define PIN_LED_13 (13)  // PC28 User Purple
-#define PIN_LED_RXL (45) // PC23
-#define PIN_LED_TXL (46) // PC24
+#define PIN_LED_RXL (45) // PB23
+#define PIN_LED_TXL (46) // PB24
 #define PIN_LED PIN_LED_13
 #define PIN_LED2 PIN_LED_8
 #define PIN_LED3 PIN_LED_9
 #define PIN_LED4 PIN_LED_RXL
 #define PIN_LED5 PIN_LED_TXL
 #define LED_BUILTIN PIN_LED_13
-#define PIN_LED_PURPLE PIN_LED_13
+#define PIN_LED_ORANGE PIN_LED_13
 #define PIN_LED_GREEN PIN_LED_8
 #define PIN_LED_RED PIN_LED_9
 
@@ -114,18 +120,18 @@ extern "C"
 #define PIN_A8 (PIN_A0 + 8)
 #define PIN_A9 (PIN_A0 + 9)
 
-#define PIN_A10 (64)
-#define PIN_A11 (PIN_A10 + 1)
+#define PIN_A10 (4)
+#define PIN_A11 (19)
+#define PIN_A12 (20)
+#define PIN_A13 (23)
+#define PIN_A14 (24)
+#define PIN_A15 (25)
+#define PIN_A16 (26)
+#define PIN_A17 (21)
+#define PIN_A18 (17)
 
-#define PIN_A12 (58)
-#define PIN_A13 (19)
-
-#define PIN_A14 (23)
-#define PIN_A15 (PIN_A14 + 6)
-#define PIN_A16 (PIN_A14 + 7)
-
-#define PIN_DAC0 PIN_A9
-#define PIN_DAC1 PIN_A7
+#define PIN_DAC0 PIN_A0
+#define PIN_DAC1 PIN_A1
 
     static const uint8_t A0 = PIN_A0;
     static const uint8_t A1 = PIN_A1;
@@ -145,6 +151,8 @@ extern "C"
     static const uint8_t A14 = PIN_A14;
     static const uint8_t A15 = PIN_A15;
     static const uint8_t A16 = PIN_A16;
+    static const uint8_t A17 = PIN_A17;
+    static const uint8_t A18 = PIN_A18;
 
     static const uint8_t DAC0 = PIN_DAC0;
     static const uint8_t DAC1 = PIN_DAC1;
@@ -182,34 +190,34 @@ extern "C"
  * - (0x3) - Tx on Pad 0, XKC (when available) on pad 1, TE on pad 2
  */
 
-// Serial1 (Grove)
-#define PIN_SERIAL1_RX (0) // PA17 SERCOM1/PAD[1]
-#define PIN_SERIAL1_TX (1) // PA16 SERCOM1/PAD[0]
+// Serial1 (Bee)
+#define SerialBee Serial1
+#define PIN_SERIAL1_RX (14) // PB17 SERCOM5/PAD[1]
+#define PIN_SERIAL1_TX (15) // PB16 SERCOM5/PAD[0]
 #define PAD_SERIAL1_TX (UART_TX_PAD_0)
 #define PAD_SERIAL1_RX (SERCOM_RX_PAD_1)
-#define SERCOM_SERIAL1 sercom1
+#define SERCOM_SERIAL1 sercom5
 
-// Serial2 (Feather Wing Right)
-#define PIN_SERIAL2_RX (26) // PA13 SERCOM2/PAD[1]
-#define PIN_SERIAL2_TX (27) // PA12 SERCOM2/PAD[0]
+// Serial2 (Grove)
+#define PIN_SERIAL2_RX (0) // PA17 SERCOM1/PAD[1]
+#define PIN_SERIAL2_TX (1) // PA16 SERCOM1/PAD[0]
 #define PAD_SERIAL2_TX (UART_TX_PAD_0)
 #define PAD_SERIAL2_RX (SERCOM_RX_PAD_1)
-#define SERCOM_SERIAL2 sercom2
+#define SERCOM_SERIAL2 sercom1
 
 // Serial3 (Feather Wing Left)
-#define PIN_SERIAL3_RX (36) // PC17 SERCOM6/PAD[1]
-#define PIN_SERIAL3_TX (37) // PC16 SERCOM6/PAD[0]
+#define PIN_SERIAL3_RX (64) // PC17 SERCOM6/PAD[1]
+#define PIN_SERIAL3_TX (65) // PC16 SERCOM6/PAD[0]
 #define PAD_SERIAL3_TX (UART_TX_PAD_0)
 #define PAD_SERIAL3_RX (SERCOM_RX_PAD_1)
 #define SERCOM_SERIAL3 sercom6
 
-// Serial4 (Bee)
-#define SerialBee Serial4
-#define PIN_SERIAL4_RX (14) // PB17 SERCOM5/PAD[1]
-#define PIN_SERIAL4_TX (15) // PB16 SERCOM5/PAD[0]
+// Serial4 (Feather Wing Right)
+#define PIN_SERIAL4_RX (36) // PA13 SERCOM2/PAD[1]
+#define PIN_SERIAL4_TX (37) // PA12 SERCOM2/PAD[0]
 #define PAD_SERIAL4_TX (UART_TX_PAD_0)
 #define PAD_SERIAL4_RX (SERCOM_RX_PAD_1)
-#define SERCOM_SERIAL4 sercom5
+#define SERCOM_SERIAL4 sercom2
 
 /**
  * SPI Interfaces
@@ -260,23 +268,18 @@ extern "C"
  * pinPeripheral( ss_pin_number, PIO_DIGITAL);
  * ```
  */
-#define SPI_INTERFACES_COUNT 2
+#define SPI_INTERFACES_COUNT 1
 
 // SD Card SPI
 #define PIN_SPI_MOSI (33) // D33 PB12 SPI MOSI SERCOM4/PAD[0]
 #define PIN_SPI_SCK (34)  // D34 PB13 SPI SCK SERCOM4/PAD[1]
-#define PIN_SPI_MISO (35) // D35 PB14 SPI MISO SERCOM4/PAD[2]
-                          // WARNING: This is not a valid configuration for hardware controlled SS [PIO_SERCOM(_ALT)]!
-                          // For hardware SS (enabled in Adafruit core by default) MISO must be on pad 3 if MOSI is on pad 0
-#define PIN_SPI_SS (29)   // D29 PB11 SPI (SD card/other) CS SERCOM4/PAD[3] [ALT!!]
-                          // WARNING: This is not a valid configuration for hardware controlled SS [PIO_SERCOM(_ALT)]!
-                          // For hardware SS (enabled in Adafruit core by default) the SS must be on pad 2
+#define PIN_SPI_SS (35)   // D35 PB11 SPI (SD card/other) CS SERCOM4/PAD[2]
+#define PIN_SPI_MISO (32) // D32 PB15 SPI MISO SERCOM4/PAD[3]
 #define PERIPH_SPI sercom4
 // Set the entire Tx config here
 #define PAD_SPI_TX SPI_PAD_0_SCK_1 // Data Out (MOSI) on pad 0, SCK is on pad 1, Hardware SS is on pad 2 (Only pad 3 left for MISO)
 // MISO - Rx - Main In, Sub Out (master in, slave out)
-#define PAD_SPI_RX SERCOM_RX_PAD_2 // MISO is on pad 2
-                                   // WARNING: the wiring of SERCOM4 for SPI is incorrect!!
+#define PAD_SPI_RX SERCOM_RX_PAD_3 // MISO is on pad 3
 
     static const uint8_t SS = PIN_SPI_SS;
     static const uint8_t MOSI = PIN_SPI_MOSI;
@@ -293,23 +296,6 @@ extern "C"
 // Other pins
 #define PIN_ATN (PIN_SPI_SS) // Default Chip Select for SPI (See https://forum.arduino.cc/t/whats-the-purpose-of-the-new-atn-pin/318278)
     static const uint8_t ATN = PIN_ATN;
-
-// Flash SPI
-#define PIN_SPI1_MOSI (42) // D42 PA08 SPI MOSI SERCOM0/PAD[0]
-#define PIN_SPI1_SCK (43)  // D43 PA09 SPI SCK SERCOM0/PAD[1]
-#define PIN_SPI1_SS (20)   // D20 PA10 SPI (Flash) CS SERCOM0/PAD[2]
-#define PIN_SPI1_MISO (44) // D44 PA11 SPI MISO SERCOM0/PAD[3]
-#define PERIPH_SPI1 sercom0
-// MOSI - Tx - Main Out, Sub In (master out, slave in)
-// Set both the MOSI pad and the SCK pad here!
-#define PAD_SPI1_TX SPI_PAD_0_SCK_1 // (0x0) - Data Out (MOSI) on pad 0, SCK is on pad 1, Hardware SS is on pad 2 (Only pad 3 left for MISO)
-// MISO - Rx - Main In, Sub Out (master in, slave out)
-#define PAD_SPI1_RX SERCOM_RX_PAD_3
-
-    static const uint8_t SS1 = PIN_SPI1_SS;
-    static const uint8_t MOSI1 = PIN_SPI1_MOSI;
-    static const uint8_t MISO1 = PIN_SPI1_MISO;
-    static const uint8_t SCK1 = PIN_SPI1_SCK;
 
 /**
  * Wire (I2C) Interfaces
@@ -378,7 +364,7 @@ extern "C"
  * On-board QSPI Flash - not used on Stonefly first print
  */
 #define EXTERNAL_FLASH_DEVICES GD25Q64E
-// #define EXTERNAL_FLASH_USE_QSPI
+#define EXTERNAL_FLASH_USE_QSPI
 
 // QSPI Pins
 #define PIN_QSPI_SCK (39) // PB10
@@ -391,20 +377,20 @@ extern "C"
 /*
  * PCC (Parallel Capture Controller) Pins
  */
-#define PIN_PCC_DEN1 (27) // PA12 - Used as UART2 Tx - SERCOM2
-#define PIN_PCC_DEN2 (26) // PA13 - Used as UART2 Rx - SERCOM2
-#define PIN_PCC_CLK (38)  // PA14 - Used as RTC Alert
+#define PIN_PCC_DEN1 (65) // PA12 - Used as UART3 Tx - SERCOM2
+#define PIN_PCC_DEN2 (66) // PA13 - Used as UART3 Rx - SERCOM2
+#define PIN_PCC_CLK (31)  // PA14 - Used as RTC Alert
 #define PIN_PCC_XCLK (29) // ??
-#define PIN_PCC_D0 (1)    // PA16 - Used as UART1 Tx - SERCOM1
-#define PIN_PCC_D1 (0)    // PA17 - Used as UART1 Rx - SERCOM1
+#define PIN_PCC_D0 (1)    // PA16 - Used as UART2 Tx - SERCOM1
+#define PIN_PCC_D1 (0)    // PA17 - Used as UART2 Rx - SERCOM1
 #define PIN_PCC_D2 (51)   // PA18
 #define PIN_PCC_D3 (52)   // PA19
 #define PIN_PCC_D4 (10)   // PA20
 #define PIN_PCC_D5 (11)   // PA21
 #define PIN_PCC_D6 (17)   // PA22 - Used as I2C SDA - SERCOM3
 #define PIN_PCC_D7 (16)   // PA23 - Used as I2C SCL - SERCOM3
-#define PIN_PCC_D8 (35)   // PB14 - Used as SPI0 MISO - SERCOM4
-#define PIN_PCC_D9 (28)   // PB15 - Used as SD Card Detect
+#define PIN_PCC_D8 (35)   // PB14 - Used as uSD SPI CS/SS - SERCOM4
+#define PIN_PCC_D9 (32)   // PB15 - Used as uSD SPI MISO - SERCOM4
 #define PIN_PCC_D10 (60)  // PC12
 #define PIN_PCC_D11 (61)  // PC13
 #define PIN_PCC_D12 (62)  // PC14
@@ -463,7 +449,9 @@ extern Uart Serial4;
 #define SERIAL_PORT_USBVIRTUAL Serial
 #define SERIAL_PORT_MONITOR Serial
 // Serial has no physical pins broken out, so it's not listed as HARDWARE port
-#define SERIAL_PORT_HARDWARE Serial1
-#define SERIAL_PORT_HARDWARE_OPEN Serial1
+#define SERIAL_PORT_HARDWARE Serial2
+#define SERIAL_PORT_HARDWARE_OPEN Serial2
 
 #endif /* _VARIANT_STONEFLY_M4_ */
+
+// cSpell:words
