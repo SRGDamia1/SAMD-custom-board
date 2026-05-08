@@ -20,8 +20,6 @@ Requirements: the following must be installed on your system
 - Arduino IDE, version 1.8 or later
 - Adafruit support package for SAMD boards
 
-Detailed instructions will be provided later.
-
 Currently, the following variants are supported:
 
 - SAMD21:  SAMD21E17A, SAMD21E18A, SAMD21G18A,

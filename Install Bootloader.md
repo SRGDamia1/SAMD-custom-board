@@ -48,14 +48,14 @@ The OpenOCD script from the fuses on the SAMD51 started with the SAMD21 script, 
 ### Unlock the BOOTPROT "fuses"
 
 - Run the following OpenOCD command:
-  - SAMD21: `./openocd -d2 -s {repo_path}\build\current\scripts -c "set bootprot 0x7" -f "{repo_path}\build\current\scripts\fuses\openocd\samd21_fuses.tcl"`
-  - SAMD51: `./openocd -d2 -s {repo_path}\build\current\scripts -c "set bootprot 0x0F" -f "{repo_path}\build\current\scripts\fuses\openocd\samd51_fuses.tcl"`
+  - SAMD21: `./openocd -d2 -s ..\share\openocd\scripts\ -c "set bootprot 0x7" -f "{repo_path}\build\current\scripts\fuses\openocd\samd21_fuses.tcl"`
+  - SAMD51: `./openocd -d2 -s ..\share\openocd\scripts\ -c "set bootprot 0x0F" -f "{repo_path}\build\current\scripts\fuses\openocd\samd51_fuses.tcl"`
 
 Explanation of Command/Arguments:
 
 - `./openocd` runs OpenoCD
 - `-d2` sets the debugging level to 2
-- `-s {repo_path}\build\current\scripts` sets the directory to search for config files and scripts
+- `-s ..\share\openocd\scripts\` sets the directory to search for config files and scripts
 - `-c "set bootprot {value}"` runs the command to set the value for boot protection
   - Values to **UNLOCK** the fuses
     - `set bootprot 0x7` for SAMD-21 [0x7, 0b111 = 0 bytes protected (not locked)]
@@ -82,8 +82,8 @@ Explanation of Command/Arguments:
 
 - `./openocd` runs OpenoCD
 - `-d2` sets the debugging level to 2
-- `-s {repo_path}\build\current\scripts` sets the directory to search for config files and scripts
-- `-f "{repo_path}\build\current\scripts\openocd\daplink_samdx1.cfg"` runs the configuration setup for DAPLink connection to the board
+- `-s ..\share\openocd\scripts\` sets the directory to search for config files and scripts
+- `-f "..\scripts\openocd\daplink_samdx1.cfg"` runs the configuration setup for DAPLink connection to the board
 - `-c ... runs the commands to program the board
   - `telnet_port disabled` temporarily disables telnet communication with OpenOCD while we're programming
   - `init` initializes OpenOCD and the TCL language
@@ -100,17 +100,11 @@ This is essentially the same procedure as un-locking the boot protection fuses, 
 See the locking section for a detailed explanation of the commands
 
 - Run the following OpenOCD command:
-  - SAMD21: `./openocd -d2 -s {repo_path}\build\current\scripts -c "set bootprot 0x2" -f "{repo_path}\build\current\scripts\fuses\openocd\samd21_fuses.tcl"`
-  - SAMD51: `./openocd -d2 -s {repo_path}\build\current\scripts -c "set bootprot 0x0D" -f "{repo_path}\build\current\scripts\fuses\openocd\samd51_fuses.tcl"`
+  - SAMD21: `./openocd -d2 -s ..\share\openocd\scripts\ -c "set bootprot 0x2" -f "{repo_path}\build\current\scripts\fuses\openocd\samd21_fuses.tcl"`
+  - SAMD51: `./openocd -d2 -s ..\share\openocd\scripts\ -c "set bootprot 0x0D" -f "{repo_path}\build\current\scripts\fuses\openocd\samd51_fuses.tcl"`
 
 ## Install the Bootloader with OpenOCD and a DAPLink Device (v2)
 
-### Do everything with a Single OpenOCD Command
-
-> [!Warning]
-> This uses the "bootloader" command within OpenOCD.
-> The developers of the UF2 bootloader consider this command to be "buggy" and don't recommend using it.
-> See the [UF2 ReadMe](https://github.com/adafruit/uf2-samdx1) for more information.
 ### Do everything with a Single OpenOCD Command
 
 > [!Warning]
@@ -130,8 +124,8 @@ Explanation of Command/Arguments:
 
 - `./openocd` runs OpenoCD
 - `-d2` sets the debugging level to 2
-- `-s {repo_path}\build\current\scripts` sets the directory to search for config files and scripts
-- `-f "{repo_path}\build\current\scripts\openocd\daplink_samdx1.cfg"` runs the configuration setup for DAPLink connection to the board
+- `-s ..\share\openocd\scripts\` sets the directory to search for config files and scripts
+- `-f "..\scripts\openocd\daplink_samdx1.cfg"` runs the configuration setup for DAPLink connection to the board
 - `-c ... runs the commands to program the board
   - `telnet_port disabled` temporarily disables telnet communication with OpenOCD while we're programming
   - `init` initializes OpenOCD and the TCL language
