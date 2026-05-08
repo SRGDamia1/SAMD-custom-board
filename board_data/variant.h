@@ -26,12 +26,13 @@
  *        Definitions
  *----------------------------------------------------------------------------*/
 
-/** Frequency of the board main oscillator */
+/** Frequency of the board main oscillator, typically 32768 Hz */
 #define VARIANT_MAINOSC (32768ul)
 
 /** Master clock frequency */
 #define VARIANT_MCK (F_CPU)
 
+/** Generic clock frequencies (SAMD51 only, remove for SAMD21)*/
 #define VARIANT_GCLK0_FREQ (F_CPU)
 #define VARIANT_GCLK1_FREQ (48000000UL)
 #define VARIANT_GCLK2_FREQ (100000000UL)
@@ -61,6 +62,8 @@ extern "C"
 #define NUM_DIGITAL_PINS (45u)
 #define NUM_ANALOG_INPUTS (19u)
 #define NUM_ANALOG_OUTPUTS (2u)
+// Mapping from analog pin number to digital pin number
+// This can be a function if pin numbers are contiguous or it can specify the mapping for each pin explicitly.
 #define analogInputToDigitalPin(p) ((p < 10)    ? 66 + (p) \
                                     : (p == 10) ? 4        \
                                     : (p == 11) ? 19       \
@@ -73,15 +76,17 @@ extern "C"
                                     : (p == 18) ? 17       \
                                                 : -1)
 
+// These macros are used to map digital pin numbers to their corresponding port registers and bit masks for the SAMD architecture.
+// You should not need to change these macros, as they are designed to work with the g_APinDescription array defined in the variant's pins_arduino.c file.
 #define digitalPinToPort(P) (&(PORT->Group[g_APinDescription[P].ulPort]))
 #define digitalPinToBitMask(P) (1 << g_APinDescription[P].ulPin)
-//#define analogInPinToBit(P)        ( )
+// #define analogInPinToBit(P)        ( )
 #define portOutputRegister(port) (&(port->OUT.reg))
 #define portInputRegister(port) (&(port->IN.reg))
 #define portModeRegister(port) (&(port->DIR.reg))
 #define digitalPinHasPWM(P) (g_APinDescription[P].ulPWMChannel != NOT_ON_PWM || g_APinDescription[P].ulTCChannel != NOT_ON_TIMER)
 
-/*
+/**
  * digitalPinToTimer(..) is AVR-specific and is not defined for SAMD
  * architecture. If you need to check if a pin supports PWM you must
  * use digitalPinHasPWM(..).
@@ -91,6 +96,7 @@ extern "C"
 // #define digitalPinToTimer(P)
 
 // LEDs
+// Optional macros for user LEDs.
 #define PIN_LED_8 (8)    // PC26 User Green
 #define PIN_LED_9 (9)    // PC27 User Red
 #define PIN_LED_13 (13)  // PC28 User Purple
@@ -106,9 +112,12 @@ extern "C"
 #define PIN_LED_GREEN PIN_LED_8
 #define PIN_LED_RED PIN_LED_9
 
-/*
- * Analog pins
+/**
+ * Analog pin definitions
+ * Explicitly define each analog pin number to its corresponding digital pin number
  */
+
+// Standard analog pins as defines
 #define PIN_A0 (66)
 #define PIN_A1 (PIN_A0 + 1)
 #define PIN_A2 (PIN_A0 + 2)
@@ -130,9 +139,11 @@ extern "C"
 #define PIN_A17 (21)
 #define PIN_A18 (17)
 
+// DAC pins as defines
 #define PIN_DAC0 PIN_A0
 #define PIN_DAC1 PIN_A1
 
+    // shorter forms as static constants
     static const uint8_t A0 = PIN_A0;
     static const uint8_t A1 = PIN_A1;
     static const uint8_t A2 = PIN_A2;
@@ -157,12 +168,25 @@ extern "C"
     static const uint8_t DAC0 = PIN_DAC0;
     static const uint8_t DAC1 = PIN_DAC1;
 
+// resolution of the ADC (Analog to Digital Converter)
+// This should be 12 for all SAMD boards
+#define ADC_RESOLUTION 12
+
 /**
- * Serial interfaces
+ * USART (Serial) interfaces
  *
  * USART – Synchronous and Asynchronous Receiver and Transmitter
  *
- * UART Objects are created in variant.cpp using one of two constructors
+ * Here you should define the pins and SERCOM pads used for each USART (serial) interface on your board.
+ * You should end up with 5 defines for each serial interface:
+ * - `PIN_SERIAL#_RX` - the digital pin number for the RX line of the serial interface, can be any SERCOM pad (0-3)
+ * - `PIN_SERIAL#_TX` - the digital pin number for the TX line of the serial interface, must be SERCOM pad 0
+ * - `PAD_SERIAL#_RX` - the SERCOM RX pad used for this serial interface (see below)
+ * - `PAD_SERIAL#_TX` - the SERCOM TX pad used for this serial interface (see below)
+ * - `SERCOM_SERIAL#` - the SERCOM instance used for this serial interface (e.g. sercom0, sercom1, etc.)
+ *
+ *
+ * The UART Objects themselves are created in variant.cpp using one of two constructors
  *
  * `Uart(SERCOM *_s, uint8_t _pinRX, uint8_t _pinTX, SercomRXPad _padRX, SercomUartTXPad _padTX);`
  * `Uart(SERCOM *_s, uint8_t _pinRX, uint8_t _pinTX, SercomRXPad _padRX, SercomUartTXPad _padTX, uint8_t _pinRTS, uint8_t _pinCTS);`
@@ -193,7 +217,9 @@ extern "C"
 // Serial1 (Bee)
 #define SerialBee Serial1
 #define PIN_SERIAL1_RX (14) // PB17 SERCOM5/PAD[1]
+// ^ Can be any pad (0-3) on a SAMD51 or SAMD21
 #define PIN_SERIAL1_TX (15) // PB16 SERCOM5/PAD[0]
+// ^ Must always be pad 0
 #define PAD_SERIAL1_TX (UART_TX_PAD_0)
 #define PAD_SERIAL1_RX (SERCOM_RX_PAD_1)
 #define SERCOM_SERIAL1 sercom5
@@ -223,6 +249,8 @@ extern "C"
  * SPI Interfaces
  *
  * SPI – Serial Peripheral Interface (Host operation)
+ *
+ * Here you should define the pins and SERCOM pads used for each SPI interface on your board.
  *
  * @note SPI interfaces are created in libraries/SPI.cpp of the Adafruit Core based on the defines below
  *
@@ -272,21 +300,28 @@ extern "C"
 
 // SD Card SPI
 #define PIN_SPI_MOSI (33) // D33 PB12 SPI MOSI SERCOM4/PAD[0]
-#define PIN_SPI_SCK (34)  // D34 PB13 SPI SCK SERCOM4/PAD[1]
-#define PIN_SPI_SS (35)   // D35 PB11 SPI (SD card/other) CS SERCOM4/PAD[2]
+// ^ Digital pin for SPI Data Out (MOSI as host, MISO as client) can be pad 0 or 3 on a SAMD51 or 0, 2, or 3 on a SAMD21
+#define PIN_SPI_SCK (34) // D34 PB13 SPI SCK SERCOM4/PAD[1]
+// ^ Digital pin for SPI SCK must be pad 1 on a SAMD51 or 1 or 3 on a SAMD21
+#define PIN_SPI_SS (35) // D35 PB11 SPI (SD card/other) CS SERCOM4/PAD[2]
+// ^ Digital pin for SPI CS must always be pad 2
 #define PIN_SPI_MISO (32) // D32 PB15 SPI MISO SERCOM4/PAD[3]
+// ^ Digital pin for SPI MISO SERCOM4/PAD[3]
 #define PERIPH_SPI sercom4
+// ^ the SERCOM instance used for this SPI interface (e.g. sercom0, sercom1, etc.)
+
 // Set the entire Tx config here
 #define PAD_SPI_TX SPI_PAD_0_SCK_1 // Data Out (MOSI) on pad 0, SCK is on pad 1, Hardware SS is on pad 2 (Only pad 3 left for MISO)
 // MISO - Rx - Main In, Sub Out (master in, slave out)
 #define PAD_SPI_RX SERCOM_RX_PAD_3 // MISO is on pad 3
 
+    // static constants for the SPI pins, you should not need to modify these
     static const uint8_t SS = PIN_SPI_SS;
     static const uint8_t MOSI = PIN_SPI_MOSI;
     static const uint8_t MISO = PIN_SPI_MISO;
     static const uint8_t SCK = PIN_SPI_SCK;
 
-// Needed for SD library
+// Defines needed for SD/SdFat library
 #define SDCARD_SPI SPI
 #define SDCARD_MISO_PIN PIN_SPI_MISO
 #define SDCARD_MOSI_PIN PIN_SPI_MOSI
@@ -315,8 +350,13 @@ extern "C"
 #define WIRE_INTERFACES_COUNT 1
 
 #define PIN_WIRE_SDA (17) // PA22 SERCOM3/PAD[0]
+// ^ Digital pin for I2C Data (SDA) must be pad 0 on a SAMD51 or SAMD21
 #define PIN_WIRE_SCL (16) // PA23 SERCOM3/PAD[1]
+// ^ Digital pin for I2C Clock (SCL) must be pad 1 on a SAMD51 or SAMD21
 #define PERIPH_WIRE sercom3
+// ^ the SERCOM instance used for this I2C interface (e.g. sercom0, sercom1, etc.)
+
+// Wire interrupt handlers
 #define WIRE_IT_HANDLER SERCOM3_Handler
 #define WIRE_IT_HANDLER_0 SERCOM3_0_Handler
 #define WIRE_IT_HANDLER_1 SERCOM3_1_Handler
@@ -340,7 +380,7 @@ extern "C"
  * #define PIN_USB_DP (#)          // USB data plus
  * ```
  */
-#define PIN_USB_HOST_ENABLE (79) // Not in use on Stonefly, but must be defined
+#define PIN_USB_HOST_ENABLE (79) // This must be defined, even if it is not used on your board, to avoid compilation errors.
 #define PIN_USB_DM (77)          // PA24
 #define PIN_USB_DP (78)          // PA25
 
@@ -360,22 +400,36 @@ extern "C"
 // #define PIN_I2S_FS (33)
 // #define PIN_I2S_MCK PIN_SERIAL4_RX
 
-/*
- * On-board QSPI Flash - not used on Stonefly first print
+/**
+ * On-board QSPI Flash
  */
 #define EXTERNAL_FLASH_DEVICES GD25Q64E
 #define EXTERNAL_FLASH_USE_QSPI
 
 // QSPI Pins
-#define PIN_QSPI_SCK (39) // PB10
-#define PIN_QSPI_CS (40)  // PB11
-#define PIN_QSPI_IO0 (42) // PA08
-#define PIN_QSPI_IO1 (43) // PA09
-#define PIN_QSPI_IO2 (41) // PA10
-#define PIN_QSPI_IO3 (44) // PA11
+#define PIN_QSPI_SCK (39)
+// ^ PB10
+#define PIN_QSPI_CS (40)
+// ^ PB11
+#define PIN_QSPI_IO0 (42)
+// ^ PA08
+#define PIN_QSPI_IO1 (43)
+// ^ PA09
+#define PIN_QSPI_IO2 (41)
+// ^ PA10
+#define PIN_QSPI_IO3 (44)
+    // ^ PA11
 
-/*
+#if !defined(VARIANT_QSPI_BAUD_DEFAULT)
+// TODO: meaningful value for this
+#define VARIANT_QSPI_BAUD_DEFAULT 5000000
+#endif
+
+/**
  * PCC (Parallel Capture Controller) Pins
+ *
+ * There is only one possible pin for each signal for PCC.
+ * Here you define which digital pin number you've assigned to the corresponding port/pin on your board
  */
 #define PIN_PCC_DEN1 (65) // PA12 - Used as UART3 Tx - SERCOM2
 #define PIN_PCC_DEN2 (66) // PA13 - Used as UART3 Rx - SERCOM2
@@ -396,11 +450,6 @@ extern "C"
 #define PIN_PCC_D12 (62)  // PC14
 #define PIN_PCC_D13 (63)  // PC15
 
-#if !defined(VARIANT_QSPI_BAUD_DEFAULT)
-// TODO: meaningful value for this
-#define VARIANT_QSPI_BAUD_DEFAULT 5000000
-#endif
-
 #ifdef __cplusplus
 }
 #endif
@@ -415,6 +464,9 @@ extern "C"
  *	===== SERCOM DEFINITION
  *	=========================
  */
+
+// Extern all SERCOM instances here
+// SAMD21 has 6 SERCOMs, SAMD51 has 8 SERCOMs
 extern SERCOM sercom0;
 extern SERCOM sercom1;
 extern SERCOM sercom2;
@@ -424,10 +476,8 @@ extern SERCOM sercom5;
 extern SERCOM sercom6;
 extern SERCOM sercom7;
 
+// extern all USART/Serial ports here
 extern Uart Serial1;
-extern Uart Serial2;
-extern Uart Serial3;
-extern Uart Serial4;
 
 #endif
 
@@ -449,9 +499,7 @@ extern Uart Serial4;
 #define SERIAL_PORT_USBVIRTUAL Serial
 #define SERIAL_PORT_MONITOR Serial
 // Serial has no physical pins broken out, so it's not listed as HARDWARE port
-#define SERIAL_PORT_HARDWARE Serial2
-#define SERIAL_PORT_HARDWARE_OPEN Serial2
+#define SERIAL_PORT_HARDWARE Serial1
+#define SERIAL_PORT_HARDWARE_OPEN Serial1
 
 #endif /* _VARIANT_STONEFLY_M4_ */
-
-// cSpell:words

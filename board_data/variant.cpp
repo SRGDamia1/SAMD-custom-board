@@ -18,10 +18,10 @@
 
 #include "variant.h"
 
-/*
- * Pins descriptions
+/**
+ * Pin descriptions
  *
- * The structure of the pin descrption array: (from WVariant.h)
+ * The structure of the pin description array: (from WVariant.h)
  * typedef struct _PinDescription
  * {
  *   EPortType       ulPort ; // IO Pin Controller PORT/group
@@ -210,18 +210,39 @@ const PinDescription g_APinDescription[] =
         {PORTA, 5, PIO_ANALOG, (PIN_ATTR_ANALOG | PIN_ATTR_PWM_E), ADC_Channel5, TC0_CH1, TC0_CH1, EXTERNAL_INT_5}, // D81 GPIO Analog (DAC, ADC, PWM)
 };
 
+/**
+ * Timer/counter instances list and generic clock instances list
+ */
+
+// Timer/counter instances list (you shouldn't need to change it)
 const void *g_apTCInstances[TCC_INST_NUM + TC_INST_NUM] = {TCC0, TCC1, TCC2, TCC3, TCC4, TC0, TC1, TC2, TC3, TC4, TC5, TC6, TC7};
+// generic clock instances list (you shouldn't need to change it)
 const uint32_t GCLK_CLKCTRL_IDs[TCC_INST_NUM + TC_INST_NUM] = {TCC0_GCLK_ID, TCC1_GCLK_ID, TCC2_GCLK_ID, TCC3_GCLK_ID, TCC4_GCLK_ID, TC0_GCLK_ID, TC1_GCLK_ID, TC2_GCLK_ID, TC3_GCLK_ID, TC4_GCLK_ID, TC5_GCLK_ID, TC6_GCLK_ID, TC7_GCLK_ID};
 
+/**
+ * SERCOM instances
+ */
+
 // Multi-serial objects instantiation
+// There are 8 SERCOMs on the SAMD51 and 6 on the SAMD21
 SERCOM sercom0(SERCOM0);
 SERCOM sercom1(SERCOM1);
 SERCOM sercom2(SERCOM2);
 SERCOM sercom3(SERCOM3);
 SERCOM sercom4(SERCOM4);
 SERCOM sercom5(SERCOM5);
+// Comment out the SERCOMs below for the SAMD21, which only has 6 SERCOMs
 SERCOM sercom6(SERCOM6);
 SERCOM sercom7(SERCOM7);
+
+/**
+ * USART (Serial) objects instantiation and interrupt handler assignment
+ *
+ * Create a Uart object for each SERCOM that you want to use as a Serial port.
+ * The constructor takes the SERCOM instance, the RX and TX pin numbers, the RX and TX pads, and optionally the RTS and CTS pin numbers (if using hardware flow control).
+ *
+ * Then, create an interrupt handler for each SERCOM that calls the IrqHandler() method of the corresponding Uart object.
+ */
 
 // Serial1 (Bee) [SERCOM5]
 // Uart(SERCOM *_s, uint8_t _pinRX, uint8_t _pinTX, SercomRXPad _padRX, SercomUartTXPad _padTX);
