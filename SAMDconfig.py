@@ -256,11 +256,6 @@ class SAMDconfig:
             self.d["menu_speed"] += f"{speed_prefix}.200.build.f_cpu=200000000L\n"
 
         # Run substitutions in all _TEMPLATE files
-        self.process_file(
-            f"{self.package_directory}/README_TEMPLATE.md",
-            f"{self.package_directory}/README.md",
-        )
-
         template_src_files = [
             os.path.join(dp, f)
             for dp, dn, filenames in os.walk(self.package_directory)
