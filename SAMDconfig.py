@@ -5,6 +5,7 @@ Main class to keep configuration data for SAMD board
 """
 
 import os
+import copy
 import shutil
 import stat
 import configparser
@@ -510,7 +511,71 @@ class SAMDconfig:
 
     # write json index file
     def write_index_json(self):
-        # see structure specifications here: https://arduino.github.io/arduino-cli/0.35/package_index_json-specification/
+        # see structure specifications here: https://arduino.github.io/arduino-cli/1.4/package_index_json-specification/
+
+        # create the package structure
+        package = {
+            "name": self.d["vendor_name_long"],
+            "maintainer": self.d["maintainer_name"],
+            "websiteURL": self.d["info_url"],
+            "email": self.d["vendor_email"],
+            "help": {"online": self.d["help_url"]},
+            "platforms": [],
+            "tools": [],
+        }
+
+        # read the exiting index file if it exists, to preserve previous versions
+        if "package_index_file" in self.d and os.path.exists(
+            self.d["package_index_file"]
+        ):
+            with open(self.d["package_index_file"], "r", encoding="UTF-8") as indexfile:
+                print(
+                    f"Found existing package index at {self.d['package_index_file']}, reading it to preserve previous versions"
+                )
+                packages = json.load(indexfile)
+        elif "package_index_url" in self.d:
+            response = requests.get(self.d["package_index_url"])
+            if response.status_code == 200:
+                print(
+                    f"Found existing package index at {self.d['package_index_url']}, reading it to preserve previous versions"
+                )
+                packages = response.json()
+            else:
+                print(
+                    f"No existing package index found at {self.d['package_index_url']}, creating a new one"
+                )
+                packages = {"packages": [copy.deepcopy(package)]}
+        else:
+            print("No existing package index found, creating a new one")
+            packages = {"packages": [copy.deepcopy(package)]}
+
+        existing_platforms: list = []
+        if "packages" in packages and len(packages["packages"]) > 0:
+            existing_package = copy.deepcopy(packages["packages"][0])
+            # verify that the basic package info matches the existing one if it exists
+            if (
+                existing_package["name"] != package["name"]
+                or existing_package["maintainer"] != package["maintainer"]
+                or existing_package["websiteURL"] != package["websiteURL"]
+                or existing_package["email"] != package["email"]
+            ):
+                raise RuntimeError(
+                    "Existing package index has different basic info (name, maintainer, websiteURL, or email). Please resolve this conflict before proceeding."
+                )
+            # Remove any outdated platform entries for the current version if they exist, to avoid conflicts with the new platform entry we're adding below.
+            # NOTE: According to the specification, 3rd party vendors should use a single package within the package index.
+            if "platforms" in existing_package:
+                existing_platforms = existing_package["platforms"]
+                for idx, platform in enumerate(existing_platforms):
+                    if (
+                        platform["name"] == self.d["package_name"]
+                        and platform["version"] == self.d["package_version"]
+                    ):
+                        print(
+                            f"Found outdated platform info for version {self.d['package_version']}, removing it."
+                        )
+                        existing_platforms.pop(idx)
+
         # let's create the current version of samd platform
         samd_current = {
             "name": self.d["package_name"],
@@ -527,20 +592,10 @@ class SAMDconfig:
             "boards": [{"name": self.d["board_name_long"]}],
             "toolsDependencies": [],
         }
+        # add the new platform entry to the package
+        existing_platforms.append(samd_current)
+        packages["packages"][0]["platforms"] = copy.deepcopy(existing_platforms)
 
-        # create the package structure
-        package = {
-            "name": self.d["vendor_name_long"],
-            # "maintainer": self.d["vendor_name_long"],
-            "maintainer": "Stroud Water Research Center - EnviroDIY",
-            "websiteURL": self.d["info_url"],
-            "email": self.d["vendor_email"],
-            "help": {"online": self.d["help_url"]},
-            "platforms": [samd_current],
-            "tools": [],
-        }
-        # FIXME: deal with previous versions
-        packages = {"packages": [package]}
         # now save to json
         indexfile_name = (
             self.build_directory + "/package_" + self.d["vendor_name"] + "_index.json"
