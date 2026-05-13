@@ -53,9 +53,9 @@ class SAMDconfig:
         self.name = self.d["board_name"]
         self.version = self.d["package_version"]
         self.version_parsed = Version(self.d["package_version"])
-        self.d["version_major"] = self.version_parsed.major
-        self.d["version_minor"] = self.version_parsed.minor
-        self.d["version_patch"] = self.version_parsed.micro
+        self.d["package_version_major"] = self.version_parsed.major
+        self.d["package_version_minor"] = self.version_parsed.minor
+        self.d["package_version_patch"] = self.version_parsed.micro
         self.chip_family = self.d["chip_family"]
         self.chip_variant = self.d["chip_variant"]
         self.is_samd51 = (self.d["chip_family"] == "SAMD51") or (
