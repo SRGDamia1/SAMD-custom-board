@@ -16,8 +16,10 @@
   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
-#ifndef _VARIANT_SAMD_EXAMPLE_
-#define _VARIANT_SAMD_EXAMPLE_
+// clang-format off
+#ifndef _VARIANT_${board_name_upper } _
+#define _VARIANT_${board_name_upper}_
+// clang-format on
 
 // The definitions here needs a SAMD core >=1.6.10
 #define ARDUINO_SAMD_VARIANT_COMPLIANCE 10610
@@ -502,6 +504,6 @@ extern Uart Serial1;
  * Put other defines that will be convenient for your users or libraries here.
  *----------------------------------------------------------------------------*/
 
-#endif /* _VARIANT_SAMD_EXAMPLE_ */
+#endif /* _VARIANT_${board_name_upper}_ */
 
 // cSpell:words RXPO DIPO DOPO MSSEN SYNCBUSY PERIPH XCLK LINUXBRIDGE
