@@ -426,7 +426,6 @@ extern "C"
 #define PIN_PCC_DEN1 (65) // PA12
 #define PIN_PCC_DEN2 (66) // PA13
 #define PIN_PCC_CLK (31)  // PA14
-#define PIN_PCC_XCLK (29) // ??
 #define PIN_PCC_D0 (1)    // PA16
 #define PIN_PCC_D1 (0)    // PA17
 #define PIN_PCC_D2 (51)   // PA18
