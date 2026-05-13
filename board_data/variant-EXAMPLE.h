@@ -54,6 +54,33 @@ extern "C"
 #endif // __cplusplus
 
 /*----------------------------------------------------------------------------
+ *        Version Information
+ *----------------------------------------------------------------------------*/
+
+/** Major version number (X.x.x) */
+#define MY_BOARD_VERSION_MAJOR $package_version_major
+/** Minor version number (x.X.x) */
+#define MY_BOARD_VERSION_MINOR $package_version_minor
+/** Patch version number (x.x.X) */
+#define MY_BOARD_VERSION_PATCH $package_version_patch
+
+/**
+ * Macro to convert version number into an integer
+ *
+ * To be used in comparisons, such as MY_BOARD_VERSION >= MY_BOARD_VERSION_VAL(4, 0, 0)
+ */
+#define MY_BOARD_VERSION_VAL(major, minor, patch) ((major << 16) | (minor << 8) | (patch))
+
+/**
+ * Current Board version, as an integer
+ *
+ * To be used in comparisons, such as MY_BOARD_VERSION >= MY_BOARD_VERSION_VAL(4, 0, 0)
+ */
+#define MY_BOARD_VERSION MY_BOARD_VERSION_VAL(MY_BOARD_VERSION_MAJOR, \
+                                              MY_BOARD_VERSION_MINOR, \
+                                              MY_BOARD_VERSION_PATCH)
+
+/*----------------------------------------------------------------------------
  *        Pins
  *----------------------------------------------------------------------------*/
 
@@ -161,7 +188,7 @@ extern "C"
     static const uint8_t DAC0 = PIN_DAC0;
     static const uint8_t DAC1 = PIN_DAC1;
 
-// resolution of the ADC (Analog to Digital Converter)
+// Resolution of the ADC (Analog to Digital Converter)
 // This should be 12 for all SAMD boards
 #define ADC_RESOLUTION 12
 
@@ -378,18 +405,12 @@ extern "C"
 #define EXTERNAL_FLASH_USE_QSPI
 
 // QSPI Pins
-#define PIN_QSPI_SCK (39)
-// ^ PB10
-#define PIN_QSPI_CS (40)
-// ^ PB11
-#define PIN_QSPI_IO0 (42)
-// ^ PA08
-#define PIN_QSPI_IO1 (43)
-// ^ PA09
-#define PIN_QSPI_IO2 (41)
-// ^ PA10
-#define PIN_QSPI_IO3 (44)
-    // ^ PA11
+#define PIN_QSPI_SCK (39) // PB10
+#define PIN_QSPI_CS (40)  // PB11
+#define PIN_QSPI_IO0 (42) // PA08
+#define PIN_QSPI_IO1 (43) // PA09
+#define PIN_QSPI_IO2 (41) // PA10
+#define PIN_QSPI_IO3 (44) // PA11
 
 #if !defined(VARIANT_QSPI_BAUD_DEFAULT)
 // TODO: meaningful value for this
@@ -472,6 +493,12 @@ extern Uart Serial1;
 // Serial has no physical pins broken out, so it's not listed as HARDWARE port
 #define SERIAL_PORT_HARDWARE Serial1
 #define SERIAL_PORT_HARDWARE_OPEN Serial1
+
+/*----------------------------------------------------------------------------
+ *       Other defines
+ *
+ * Put other defines that will be convenient for your users or libraries here.
+ *----------------------------------------------------------------------------*/
 
 #endif /* _VARIANT_SAMD_EXAMPLE_ */
 

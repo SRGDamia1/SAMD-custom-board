@@ -16,7 +16,7 @@ import hashlib
 import json
 from datetime import date
 import requests
-
+from packaging.version import Version
 
 # Cloning the uf2 directory as part of the build creates read-only files which rmtree cannot
 # delete without a helper.
@@ -52,6 +52,10 @@ class SAMDconfig:
         # define common properties
         self.name = self.d["board_name"]
         self.version = self.d["package_version"]
+        self.version_parsed = Version(self.d["package_version"])
+        self.d["version_major"] = self.version_parsed.major
+        self.d["version_minor"] = self.version_parsed.minor
+        self.d["version_patch"] = self.version_parsed.micro
         self.chip_family = self.d["chip_family"]
         self.chip_variant = self.d["chip_variant"]
         self.is_samd51 = (self.d["chip_family"] == "SAMD51") or (
@@ -254,6 +258,13 @@ class SAMDconfig:
             self.d["menu_speed"] += f"{speed_prefix}.180.build.f_cpu=180000000L\n"
             self.d["menu_speed"] += f"{speed_prefix}.200=200 MHz (overclock)\n"
             self.d["menu_speed"] += f"{speed_prefix}.200.build.f_cpu=200000000L\n"
+
+        # rename the variant.h as a template so we can easily run substitutions in it
+        # this makes it easier for users to get version numbers right
+        board_variant = f"{self.package_directory}/variants/{self.name}/variant.h"
+        os.rename(
+            board_variant, board_variant.replace("/variant.h", "/variant_TEMPLATE.h")
+        )
 
         # Run substitutions in all _TEMPLATE files
         template_src_files = [
