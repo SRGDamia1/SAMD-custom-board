@@ -54,6 +54,33 @@ extern "C"
 #endif // __cplusplus
 
 /*----------------------------------------------------------------------------
+ *        Version Information
+ *----------------------------------------------------------------------------*/
+
+/** Major version number (X.x.x) */
+#define MY_BOARD_VERSION_MAJOR $package_version_major
+/** Minor version number (x.X.x) */
+#define MY_BOARD_VERSION_MINOR $package_version_minor
+/** Patch version number (x.x.X) */
+#define MY_BOARD_VERSION_PATCH $package_version_patch
+
+/**
+ * Macro to convert version number into an integer
+ *
+ * To be used in comparisons, such as MY_BOARD_VERSION >= MY_BOARD_VERSION_VAL(4, 0, 0)
+ */
+#define MY_BOARD_VERSION_VAL(major, minor, patch) ((major << 16) | (minor << 8) | (patch))
+
+/**
+ * Current Board version, as an integer
+ *
+ * To be used in comparisons, such as MY_BOARD_VERSION >= MY_BOARD_VERSION_VAL(4, 0, 0)
+ */
+#define MY_BOARD_VERSION MY_BOARD_VERSION_VAL(MY_BOARD_VERSION_MAJOR, \
+                                              MY_BOARD_VERSION_MINOR, \
+                                              MY_BOARD_VERSION_PATCH)
+
+/*----------------------------------------------------------------------------
  *        Pins
  *----------------------------------------------------------------------------*/
 
