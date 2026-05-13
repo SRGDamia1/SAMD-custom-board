@@ -54,6 +54,33 @@ extern "C"
 #endif // __cplusplus
 
 /*----------------------------------------------------------------------------
+ *        Version Information
+ *----------------------------------------------------------------------------*/
+
+/** Major version number (X.x.x) */
+#define STONEFLY_VERSION_MAJOR $package_version_major
+/** Minor version number (x.X.x) */
+#define STONEFLY_VERSION_MINOR $package_version_minor
+/** Patch version number (x.x.X) */
+#define STONEFLY_VERSION_PATCH $package_version_patch
+
+/**
+ * Macro to convert version number into an integer
+ *
+ * To be used in comparisons, such as STONEFLY_VERSION >= STONEFLY_VERSION_VAL(4, 0, 0)
+ */
+#define STONEFLY_VERSION_VAL(major, minor, patch) ((major << 16) | (minor << 8) | (patch))
+
+/**
+ * Current Board version, as an integer
+ *
+ * To be used in comparisons, such as STONEFLY_VERSION >= STONEFLY_VERSION_VAL(4, 0, 0)
+ */
+#define STONEFLY_VERSION STONEFLY_VERSION_VAL(STONEFLY_VERSION_MAJOR, \
+                                              STONEFLY_VERSION_MINOR, \
+                                              STONEFLY_VERSION_PATCH)
+
+/*----------------------------------------------------------------------------
  *        Pins
  *----------------------------------------------------------------------------*/
 
@@ -168,7 +195,7 @@ extern "C"
     static const uint8_t DAC0 = PIN_DAC0;
     static const uint8_t DAC1 = PIN_DAC1;
 
-// resolution of the ADC (Analog to Digital Converter)
+// Resolution of the ADC (Analog to Digital Converter)
 // This should be 12 for all SAMD boards
 #define ADC_RESOLUTION 12
 
@@ -215,10 +242,9 @@ extern "C"
  */
 
 // Serial1 (Bee)
-#define SerialBee Serial1
-#define PIN_SERIAL1_RX (14) // PB17 SERCOM5/PAD[1]
+#define PIN_SERIAL1_RX (27) // PB17 SERCOM5/PAD[1]
 // ^ Can be any pad (0-3) on a SAMD51 or SAMD21
-#define PIN_SERIAL1_TX (15) // PB16 SERCOM5/PAD[0]
+#define PIN_SERIAL1_TX (28) // PB16 SERCOM5/PAD[0]
 // ^ Must always be pad 0
 #define PAD_SERIAL1_TX (UART_TX_PAD_0)
 #define PAD_SERIAL1_RX (SERCOM_RX_PAD_1)
@@ -232,18 +258,18 @@ extern "C"
 #define SERCOM_SERIAL2 sercom1
 
 // Serial3 (Feather Wing Left)
-#define PIN_SERIAL3_RX (64) // PC17 SERCOM6/PAD[1]
-#define PIN_SERIAL3_TX (65) // PC16 SERCOM6/PAD[0]
+#define PIN_SERIAL3_RX (64) // PA13 SERCOM2/PAD[1]
+#define PIN_SERIAL3_TX (65) // PA12 SERCOM2/PAD[0]
 #define PAD_SERIAL3_TX (UART_TX_PAD_0)
 #define PAD_SERIAL3_RX (SERCOM_RX_PAD_1)
-#define SERCOM_SERIAL3 sercom6
+#define SERCOM_SERIAL3 sercom2
 
 // Serial4 (Feather Wing Right)
-#define PIN_SERIAL4_RX (36) // PA13 SERCOM2/PAD[1]
-#define PIN_SERIAL4_TX (37) // PA12 SERCOM2/PAD[0]
+#define PIN_SERIAL4_RX (36) // PC17 SERCOM6/PAD[1]
+#define PIN_SERIAL4_TX (37) // PC16 SERCOM6/PAD[0]
 #define PAD_SERIAL4_TX (UART_TX_PAD_0)
 #define PAD_SERIAL4_RX (SERCOM_RX_PAD_1)
-#define SERCOM_SERIAL4 sercom2
+#define SERCOM_SERIAL4 sercom6
 
 /**
  * SPI Interfaces
@@ -349,9 +375,9 @@ extern "C"
  */
 #define WIRE_INTERFACES_COUNT 1
 
-#define PIN_WIRE_SDA (17) // PA22 SERCOM3/PAD[0]
+#define PIN_WIRE_SDA (30) // PA22 SERCOM3/PAD[0]
 // ^ Digital pin for I2C Data (SDA) must be pad 0 on a SAMD51 or SAMD21
-#define PIN_WIRE_SCL (16) // PA23 SERCOM3/PAD[1]
+#define PIN_WIRE_SCL (29) // PA23 SERCOM3/PAD[1]
 // ^ Digital pin for I2C Clock (SCL) must be pad 1 on a SAMD51 or SAMD21
 #define PERIPH_WIRE sercom3
 // ^ the SERCOM instance used for this I2C interface (e.g. sercom0, sercom1, etc.)
@@ -407,18 +433,12 @@ extern "C"
 #define EXTERNAL_FLASH_USE_QSPI
 
 // QSPI Pins
-#define PIN_QSPI_SCK (39)
-// ^ PB10
-#define PIN_QSPI_CS (40)
-// ^ PB11
-#define PIN_QSPI_IO0 (42)
-// ^ PA08
-#define PIN_QSPI_IO1 (43)
-// ^ PA09
-#define PIN_QSPI_IO2 (41)
-// ^ PA10
-#define PIN_QSPI_IO3 (44)
-    // ^ PA11
+#define PIN_QSPI_SCK (39) // PB10
+#define PIN_QSPI_CS (40)  // PB11
+#define PIN_QSPI_IO0 (42) // PA08
+#define PIN_QSPI_IO1 (43) // PA09
+#define PIN_QSPI_IO2 (41) // PA10
+#define PIN_QSPI_IO3 (44) // PA11
 
 #if !defined(VARIANT_QSPI_BAUD_DEFAULT)
 // TODO: meaningful value for this
@@ -431,20 +451,20 @@ extern "C"
  * There is only one possible pin for each signal for PCC.
  * Here you define which digital pin number you've assigned to the corresponding port/pin on your board
  */
-#define PIN_PCC_DEN1 (65) // PA12 - Used as UART3 Tx - SERCOM2
-#define PIN_PCC_DEN2 (66) // PA13 - Used as UART3 Rx - SERCOM2
-#define PIN_PCC_CLK (31)  // PA14 - Used as RTC Alert
+#define PIN_PCC_DEN1 (65) // PA12
+#define PIN_PCC_DEN2 (66) // PA13
+#define PIN_PCC_CLK (31)  // PA14
 #define PIN_PCC_XCLK (29) // ??
-#define PIN_PCC_D0 (1)    // PA16 - Used as UART2 Tx - SERCOM1
-#define PIN_PCC_D1 (0)    // PA17 - Used as UART2 Rx - SERCOM1
+#define PIN_PCC_D0 (1)    // PA16
+#define PIN_PCC_D1 (0)    // PA17
 #define PIN_PCC_D2 (51)   // PA18
 #define PIN_PCC_D3 (52)   // PA19
 #define PIN_PCC_D4 (10)   // PA20
 #define PIN_PCC_D5 (11)   // PA21
-#define PIN_PCC_D6 (17)   // PA22 - Used as I2C SDA - SERCOM3
-#define PIN_PCC_D7 (16)   // PA23 - Used as I2C SCL - SERCOM3
-#define PIN_PCC_D8 (35)   // PB14 - Used as uSD SPI CS/SS - SERCOM4
-#define PIN_PCC_D9 (32)   // PB15 - Used as uSD SPI MISO - SERCOM4
+#define PIN_PCC_D6 (17)   // PA22
+#define PIN_PCC_D7 (16)   // PA23
+#define PIN_PCC_D8 (35)   // PB14
+#define PIN_PCC_D9 (32)   // PB15
 #define PIN_PCC_D10 (60)  // PC12
 #define PIN_PCC_D11 (61)  // PC13
 #define PIN_PCC_D12 (62)  // PC14
@@ -478,6 +498,9 @@ extern SERCOM sercom7;
 
 // extern all USART/Serial ports here
 extern Uart Serial1;
+extern Uart Serial2;
+extern Uart Serial3;
+extern Uart Serial4;
 
 #endif
 
@@ -501,6 +524,29 @@ extern Uart Serial1;
 // Serial has no physical pins broken out, so it's not listed as HARDWARE port
 #define SERIAL_PORT_HARDWARE Serial1
 #define SERIAL_PORT_HARDWARE_OPEN Serial1
+
+/*----------------------------------------------------------------------------
+ *       Other defines
+ *
+ * Put other defines that will be convenient for your users or libraries here.
+ *----------------------------------------------------------------------------*/
+
+#define SerialBee Serial1
+static const uint8_t BEEPWR = 18;
+static const uint8_t BEERX = PIN_SERIAL1_RX;
+static const uint8_t BEETX = PIN_SERIAL1_TX;
+static const uint8_t BEEDTR = 23;
+static const uint8_t BEERTS = 20;
+static const uint8_t BEECTS = 19;
+static const uint8_t BEERESET = 24;
+
+static const uint8_t GROVEPWR = 22;
+static const uint8_t GROVEPWR_OFF = 0;
+static const uint8_t GROVEPWR_ON = 1;
+
+static const uint8_t BATVOLTPIN = 75; // A9
+#define BATVOLT_R1 47                 // in fact 4.7M
+#define BATVOLT_R2 100                // in fact 10M
 
 #endif /* _VARIANT_STONEFLY_M4_ */
 

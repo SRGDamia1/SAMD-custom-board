@@ -76,7 +76,7 @@ Explanation of Command/Arguments:
 ### Write the Bootloader
 
 - Run OpenOCD with these commands to program the board
-  - ```./openocd -d2 -s ..\share\openocd\scripts\ -f "C:\Users\sdamiano\Documents\GitHub\EnviroDIY\SAMD-custom-board\build\current\scripts\openocd\daplink_samdx1.cfg" -c "telnet_port disabled; init; reset halt; `$_FLASHDRIVER chip-erase; program C:/Users/sdamiano/Documents/GitHub/EnviroDIY/SAMD-custom-board/build/current/bootloaders/stonefly_m4/bootloader-stonefly_m4-0.0.4-uf2v3.16.0.bin verify reset; shutdown"```
+  - ```./openocd -d2 -s ..\share\openocd\scripts\ -f "C:\Users\sdamiano\Documents\GitHub\EnviroDIY\SAMD-custom-board\build\current\scripts\openocd\daplink_samdx1.cfg" -c "telnet_port disabled; init; reset halt; `$_FLASHDRIVER chip-erase; program C:/Users/sdamiano/Documents/GitHub/EnviroDIY/SAMD-custom-board/build/current/bootloaders/stonefly_m4/bootloader-stonefly_m4-0.3.7-uf2v3.16.0.bin verify reset; shutdown"```
 
 Explanation of Command/Arguments:
 
@@ -184,7 +184,7 @@ This would be significantly better (though much more complex) than hard-writing 
 - Reset the target
   - `r`
 - Upload the bootloader file to address 0
-  - `loadbin "C:\Users\sdamiano\Documents\GitHub\EnviroDIY\SAMD-custom-board\build\bootloader-stonefly_m4-v3.16.0.bin",0`
+  - `loadbin "C:\Users\sdamiano\Documents\GitHub\EnviroDIY\SAMD-custom-board\build\current\bootloaders\stonefly_m4\bootloader-stonefly_m4-0.3.7-uf2v3.16.0.bin",0`
 - Reset the target
   - `r`
 
