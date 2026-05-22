@@ -337,7 +337,7 @@ extern "C"
 #define PIN_SPI_SS (35) // PB14 SPI (SD card/other) CS SERCOM4/PAD[2]
 // ^ Digital pin for SPI CS must always be pad 2
 #define PIN_SPI_MISO (32) // PB15 SPI MISO SERCOM4/PAD[3]
-// ^ Digital pin for SPI MISO SERCOM4/PAD[3]
+// ^ Digital pin for SPI Data In (MISO as host, MOSI as client) SERCOM4/PAD[3]
 #define PERIPH_SPI sercom4
 // ^ the SERCOM instance used for this SPI interface (e.g. sercom0, sercom1, etc.)
 
@@ -535,6 +535,7 @@ extern Uart Serial4;
  * Put other defines that will be convenient for your users or libraries here.
  *----------------------------------------------------------------------------*/
 
+// X-Bee Socket
 #define SerialBee Serial1
 static const uint8_t BEEPWR = 18;
 static const uint8_t BEERX = PIN_SERIAL1_RX;
@@ -545,10 +546,12 @@ static const uint8_t BEECTS = 19;
 static const uint8_t BEESTATUS = 28;
 static const uint8_t BEERESET = 29;
 
+// Grove ports
 static const uint8_t GROVEPWR = 22;
 static const uint8_t GROVEPWR_OFF = 0;
 static const uint8_t GROVEPWR_ON = 1;
 
+// Battery voltage measurement
 static const uint8_t BATVOLTPIN = 75; // A9
 #define BATVOLT_R1 47                 // in fact 4.7M
 #define BATVOLT_R2 100                // in fact 10M
