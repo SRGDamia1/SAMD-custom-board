@@ -309,7 +309,7 @@ extern "C"
 #define PIN_SPI_SS (35)
 // ^ Digital pin for SPI CS must always be pad 2
 #define PIN_SPI_MISO (32)
-// ^ Digital pin for SPI MISO SERCOM4/PAD[3]
+// ^ Digital pin for SPI Data In (MISO as host, MOSI as client) SERCOM4/PAD[3]
 #define PERIPH_SPI sercom4
 // ^ the SERCOM instance used for this SPI interface (e.g. sercom0, sercom1, etc.)
 
