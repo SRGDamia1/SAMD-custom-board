@@ -51,7 +51,6 @@ class SAMDconfig:
 
         # define common properties
         self.name = self.d["board_name"]
-        self.d["board_name_upper"] = self.d["board_name"].upper()
         self.version = self.d["package_version"]
         self.version_parsed = Version(self.d["package_version"])
         self.d["package_version_major"] = self.version_parsed.major
@@ -75,7 +74,7 @@ class SAMDconfig:
         # add flag for the board name
         self.d[
             "extra_flags"
-        ] += f" -D{self.d['vendor_name'].upper()}_{self.d['board_name_upper']}"
+        ] += f" -D{self.d['vendor_name'].upper()}_{self.d["board_name"].upper()}"
 
         # add MCU-specific parameters
         # SAMD21's have up to 256kB flash and up to 32kB RAM

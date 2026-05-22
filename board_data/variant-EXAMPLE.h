@@ -17,8 +17,8 @@
 */
 
 // clang-format off
-#ifndef _VARIANT_${board_name_upper } _
-#define _VARIANT_${board_name_upper}_
+#ifndef _VARIANT_${board_define_name}_
+#define _VARIANT_${board_define_name}_
 // clang-format on
 
 // The definitions here needs a SAMD core >=1.6.10
@@ -62,27 +62,27 @@ extern "C"
      *----------------------------------------------------------------------------*/
     // clang-format off
 /** Major version number (X.x.x) */
-#define ${board_name_upper}_VERSION_MAJOR $package_version_major
+#define ${board_define_name}_VERSION_MAJOR $package_version_major
 /** Minor version number (x.X.x) */
-#define ${board_name_upper}_VERSION_MINOR $package_version_minor
+#define ${board_define_name}_VERSION_MINOR $package_version_minor
 /** Patch version number (x.x.X) */
-#define ${board_name_upper}_VERSION_PATCH $package_version_patch
+#define ${board_define_name}_VERSION_PATCH $package_version_patch
 
 /**
  * Macro to convert version number into an integer
  *
- * To be used in comparisons, such as ${board_name_upper}_VERSION >= ${board_name_upper}_VERSION_VAL(4, 0, 0)
+ * To be used in comparisons, such as ${board_define_name}_VERSION >= ${board_define_name}_VERSION_VAL(4, 0, 0)
  */
-#define ${board_name_upper}_VERSION_VAL(major, minor, patch)((major << 16) | (minor << 8) | (patch))
+#define ${board_define_name}_VERSION_VAL(major, minor, patch) ((major << 16) | (minor << 8) | (patch))
 
 /**
  * Current Board version, as an integer
  *
- * To be used in comparisons, such as ${board_name_upper}_VERSION >= ${board_name_upper}_VERSION_VAL(4, 0, 0)
+ * To be used in comparisons, such as ${board_define_name}_VERSION >= ${board_define_name}_VERSION_VAL(4, 0, 0)
  */
-#define ${board_name_upper}_VERSION ${board_name_upper}_VERSION_VAL(${board_name_upper}_VERSION_MAJOR, \
-                                                                       ${board_name_upper}_VERSION_MINOR, \
-                                                                       ${board_name_upper}_VERSION_PATCH)
+#define ${board_define_name}_VERSION ${board_define_name}_VERSION_VAL(${board_define_name}_VERSION_MAJOR, \
+                                                                       ${board_define_name}_VERSION_MINOR, \
+                                                                       ${board_define_name}_VERSION_PATCH)
 // clang-format on
 
 /*----------------------------------------------------------------------------
@@ -309,7 +309,7 @@ extern "C"
 #define PIN_SPI_SS (35)
 // ^ Digital pin for SPI CS must always be pad 2
 #define PIN_SPI_MISO (32)
-// ^ Digital pin for SPI MISO SERCOM4/PAD[3]
+// ^ Digital pin for SPI Data In (MISO as host, MOSI as client) SERCOM4/PAD[3]
 #define PERIPH_SPI sercom4
 // ^ the SERCOM instance used for this SPI interface (e.g. sercom0, sercom1, etc.)
 
@@ -504,6 +504,6 @@ extern Uart Serial1;
  * Put other defines that will be convenient for your users or libraries here.
  *----------------------------------------------------------------------------*/
 
-#endif /* _VARIANT_${board_name_upper}_ */
+#endif /* _VARIANT_${board_define_name}_ */
 
 // cSpell:words RXPO DIPO DOPO MSSEN SYNCBUSY PERIPH XCLK LINUXBRIDGE
