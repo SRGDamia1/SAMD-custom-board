@@ -588,9 +588,9 @@ class SAMDPackage:
             encoding="UTF-8",
         ) as board_file:
             combined_boards.append(board_file.read())
-        combined_boards.append("\n")
         os.remove(os.path.join(self.package_directory, "boards_header.txt"))
         for board in self.boards_config:
+            combined_boards.append("\n")
             print(
                 f"Opening file for board {board.name} at {os.path.join(self.package_directory, f'boards_{board.name}.txt')}"
             )
@@ -600,7 +600,6 @@ class SAMDPackage:
                 encoding="UTF-8",
             ) as board_file:
                 combined_boards.append(board_file.read())
-            combined_boards.append("\n")
             print(
                 f"Deleting individual board file for board {board.name} at {os.path.join(self.package_directory, f'boards_{board.name}.txt')}"
             )
@@ -718,13 +717,15 @@ class SAMDPackage:
     # record archive size and SHA256 checksum
     def package_archive(self):
         # archive_filename = f"{self.config_directory}/{self.name}-{self.version}"
-        archive_filename = os.path.join(
-            self.build_directory,
-            f"{self.d['package_name'].replace(' ','').lower()}-{self.package_version}",
+        archive_filename = (
+            f"{self.d['package_name'].replace(' ','').lower()}-{self.package_version}"
         )
         print(f"Creating package archive at {archive_filename}.zip")
         zip_archive = shutil.make_archive(
-            archive_filename,
+            os.path.join(
+                self.build_directory,
+                archive_filename,
+            ),
             "zip",
             root_dir=self.build_directory,
             # base_dir=self.version,
@@ -740,9 +741,7 @@ class SAMDPackage:
             f"Created package archive, size {archive_size} bytes,\n SHA256 hash: {hash}"
         )
         # add the info to dictionary
-        self.d["archive_filename"] = (
-            archive_filename.replace("build/", "").replace("build\\\\", "") + ".zip"
-        )
+        self.d["archive_filename"] = archive_filename + ".zip"
         self.d["archive_size"] = archive_size
         self.d["archive_checksum"] = hash
 
