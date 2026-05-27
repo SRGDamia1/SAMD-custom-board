@@ -234,7 +234,7 @@ debug.server.openocd.script={runtime.platform.path}/{build.openocdscript}
 #debug.server=jlink
 #debug.server.jlink.path=JLinkGDBServer
 #debug.server.jlink.device={build.variant}
-#debug.server.jlink.script={runtime.platform.path}/{build.openocdscript}
+#debug.server.jlink.script={runtime.platform.path}/{build.jlinkscript}
 
 # USB Flags
 # ------------------------------

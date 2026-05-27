@@ -1,0 +1,12 @@
+{
+  "name": "framework-arduino-samd-$vendor_name",
+  "description": "$package_name",
+  "version": "$package_version",
+  "url": "$info_url",
+  "author": {
+    "name": "$maintainer_name",
+    "email": "$vendor_email"
+  },
+  "keywords": ["framework", "arduino", "samd", "$vendor_name_long"],
+  "repository": "$package_repository"
+}
