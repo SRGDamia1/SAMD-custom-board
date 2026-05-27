@@ -761,15 +761,17 @@ class SAMDPackage:
         }
 
         # read the exiting index file if it exists, to preserve previous versions
-        if "package_index_file" in self.d and os.path.exists(
-            self.d["package_index_file"]
+        if (
+            "package_index_file" in self.d
+            and self.d["package_index_file"]
+            and os.path.exists(self.d["package_index_file"])
         ):
             with open(self.d["package_index_file"], "r", encoding="UTF-8") as indexfile:
                 print(
                     f"Found existing package index at {self.d['package_index_file']}, reading it to preserve previous versions"
                 )
                 packages = json.load(indexfile)
-        elif "package_index_url" in self.d:
+        elif "package_index_url" in self.d and self.d["package_index_url"]:
             response = requests.get(self.d["package_index_url"])
             if response.status_code == 200:
                 print(
@@ -818,7 +820,7 @@ class SAMDPackage:
             "architecture": "samd",
             "version": self.d["package_version"],
             "category": "Contributed",
-            "url": self.d["package_url"] + self.d["archive_filename"],
+            "url": self.d["package_archive_url"] + self.d["archive_filename"],
             "archiveFileName": self.d["archive_filename"],
             "checksum": "SHA-256:" + self.d["archive_checksum"],
             "size": self.d["archive_size"],
