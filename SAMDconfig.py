@@ -18,6 +18,7 @@ from datetime import date
 import requests
 from packaging.version import Version
 
+
 # Cloning the uf2 directory as part of the build creates read-only files which rmtree cannot
 # delete without a helper.
 def remove_readonly(func, path, _):
@@ -26,7 +27,7 @@ def remove_readonly(func, path, _):
     func(path)
 
 
-class SAMDconfig:
+class SAMDConfig:
     # constructor
     def __init__(self, filename):
         # dictionary containing all config data
@@ -35,9 +36,13 @@ class SAMDconfig:
         # read all values from main sections of config file
         config_file = configparser.ConfigParser()
         config_file.read(filename)
-        for s in ["hardware", "usb", "names", "paths"]:
+        for s in ["hardware", "usb", "names"]:
             for key, value in config_file[s].items():
                 self.d[key] = value
+                if key == "board_define_name" and value == "":
+                    self.d["board_define_name"] = (
+                        self.d["board_name"].lower().replace(" ", "_")
+                    )
 
         # now, read additional options for the bootloader
         self.extras = {}
@@ -51,11 +56,12 @@ class SAMDconfig:
 
         # define common properties
         self.name = self.d["board_name"]
-        self.version = self.d["package_version"]
-        self.version_parsed = Version(self.d["package_version"])
-        self.d["package_version_major"] = self.version_parsed.major
-        self.d["package_version_minor"] = self.version_parsed.minor
-        self.d["package_version_patch"] = self.version_parsed.micro
+        self.d["board_name_upper"] = self.d["board_name"].upper()
+        self.board_version = self.d["board_version"]
+        board_version_parsed = Version(self.d["board_version"])
+        self.d["board_version_major"] = board_version_parsed.major
+        self.d["board_version_minor"] = board_version_parsed.minor
+        self.d["board_version_patch"] = board_version_parsed.micro
         self.chip_family = self.d["chip_family"]
         self.chip_variant = self.d["chip_variant"]
         self.is_samd51 = (self.d["chip_family"] == "SAMD51") or (
@@ -71,10 +77,6 @@ class SAMDconfig:
 
         # chip variant is first extra flag
         self.d["extra_flags"] = f"-D__{self.chip_variant}__"
-        # add flag for the board name
-        self.d[
-            "extra_flags"
-        ] += f" -D{self.d['vendor_name'].upper()}_{self.d["board_name"].upper()}"
 
         # add MCU-specific parameters
         # SAMD21's have up to 256kB flash and up to 32kB RAM
@@ -92,7 +94,8 @@ class SAMDconfig:
             self.d["build_mcu"] = "cortex-m0plus"
             self.d["f_cpu"] = "48000000L"
             self.d["extra_flags"] += " -DARDUINO_SAMD_ZERO -DARM_MATH_CM0PLUS"
-            self.d["openocdscript"] = "scripts/openocd/daplink_samdx1.cfg"
+            self.d["openocdscript"] = f"scripts/openocd/daplink_samdx1_{self.name}.cfg"
+            self.d["jlinkscript"] = f"scripts/jlink/debug_custom_{self.name}.cfg"
             self.d["compiler_ld_flags"] = ""
         elif self.is_samd51:
             self.d["data_size"] = 0
@@ -130,7 +133,8 @@ class SAMDconfig:
             self.d[
                 "extra_flags"
             ] += " -D__SAMD51__ -D__FPU_PRESENT -DARM_MATH_CM4 -mfloat-abi=hard -mfpu=fpv4-sp-d16"
-            self.d["openocdscript"] = "scripts/openocd/daplink_samdx1.cfg"
+            self.d["openocdscript"] = f"scripts/openocd/daplink_samdx1_{self.name}.cfg"
+            self.d["jlinkscript"] = f"scripts/jlink/debug_custom_{self.name}.cfg"
             self.d["compiler_ld_flags"] = (
                 f'{self.d["board_name"]}.compiler.arm.cmsis.ldflags="-L{{runtime.tools.CMSIS-5.4.0.path}}/CMSIS/Lib/GCC/" "-L{{build.variant.path}}" -larm_cortexM4lf_math -mfloat-abi=hard -mfpu=fpv4-sp-d16'
             )
@@ -142,100 +146,6 @@ class SAMDconfig:
         self.d["flash_size_hex"] = f"{self.d['flash_size']:#0{10}x}"
         self.d["ram_size_hex"] = f"{self.d['ram_size']:#0{10}x}"
 
-        # add extra GCC flags
-        if "crystalless" in self.d.keys() and self.d["crystalless"] != "0":
-            self.d["extra_flags"] += " -DCRYSTALLESS"
-
-        # add extra extra GCC flags
-        self.d["extra_flags"] += (
-            " " + config_file["additional_build_flags"]["extra_extra_flags"]
-        )
-        self.d["extra_flags_pio"] = self.d["extra_flags"].split(" ")
-        # remove the duplicate flags added by default by PlatformIO
-        self.d["extra_flags_pio"] = [
-            flag
-            for flag in self.d["extra_flags_pio"]
-            if flag not in ["-mfloat-abi=hard", "-mfpu=fpv4-sp-d16"]
-        ]
-        if self.is_samd51:
-            # enable the cache
-            # this is done in a special cache flag for the Arduino IDE, but in the build flags for PlatformIO
-            self.d["extra_flags_pio"].append("-DENABLE_CACHE")
-        # convert to json-esque string
-        self.d["extra_flags_pio"] = json.dumps(self.d["extra_flags_pio"])
-
-    def check_missing_values(self, dictionary):
-        for key, value in dictionary.items():
-            if not value:
-                print(f"No value provided for {key}")
-                raise RuntimeError("Missing configuration parameters")
-
-    # reads template file, does all substitutions from the dictionary, saves result as destination
-    # source and destination should be filenames
-    def process_file(self, source, destination):
-
-        # open the template file
-        with open(source, "r", encoding="UTF-8") as template_file:
-            original = template_file.read()
-
-        # make substitutions
-        new_data = Template(original).substitute(self.d)
-
-        # write the new file
-        with open(destination, "w", encoding="UTF-8") as dest_file:
-            dest_file.write(new_data)
-
-        # delete the template file
-        os.remove(source)
-
-    def setup_build_directory(self, dirname):
-        self.build_directory = dirname
-        # self.package_directory = f"{dirname}/{self.version}"
-        self.package_directory = f"{dirname}/current"
-        # remove old build directory, if it exists
-        if os.path.exists(dirname):
-            print("Removing old build directory")
-            shutil.rmtree(dirname, onerror=remove_readonly)
-        # copy the template directory into the build directory
-        print("Copying the template directory")
-        shutil.copytree("PACKAGE_TEMPLATE", self.package_directory)
-
-        # select which fuse setting script to keep
-        fuses_dir = self.package_directory + "/scripts/fuses"
-
-        # delete irrelevant the fuse-setting scripts
-        fuse_src_files = [
-            os.path.join(dp, f)
-            for dp, dn, filenames in os.walk(fuses_dir)
-            for f in filenames
-        ]
-        for file_name in fuse_src_files:
-            if os.path.isfile(file_name) and self.chip_family.lower() not in file_name:
-                os.remove(file_name)
-
-        # rename the variants directory
-        variants_dir = self.package_directory + "/variants"
-        board_variant = f"{variants_dir}/{self.name}"
-        os.rename(variants_dir + "/your_variant", board_variant)
-        # move the hand written variants files into the board variant directory
-        shutil.copy2("board_data/variant.cpp", f"{board_variant}")
-        shutil.copy2("board_data/variant.h", f"{board_variant}")
-
-        # Add filenames to the dictionary
-        self.d["bootloader_dir"] = (
-            f"{self.build_directory}/uf2-samdx1/build/{self.name}"
-        )
-        self.d["bootloader_buildname"] = (
-            f"bootloader-{self.name}-{self.d['uf2_version_tag']}"
-        )
-        self.d["bootloader_versioned_name"] = (
-            f"bootloader-{self.name}-{self.version}-uf2{self.d['uf2_version_tag']}"
-        )
-        self.d["bootloader_filename"] = f"{self.d['bootloader_versioned_name']}.bin"
-
-    # creates boards.txt, platform.txt and README.md files, by processing template files in package directory
-    # these are used by the Arduino IDE
-    def write_platform_templates(self):
         # if necessary, add entries for cache and speed menus
         self.d["menu_cache"] = ""
         self.d["menu_speed"] = ""
@@ -259,70 +169,20 @@ class SAMDconfig:
             self.d["menu_speed"] += f"{speed_prefix}.200=200 MHz (overclock)\n"
             self.d["menu_speed"] += f"{speed_prefix}.200.build.f_cpu=200000000L\n"
 
-        # rename the variant.h as a template so we can easily run substitutions in it
-        # this makes it easier for users to get version numbers right
-        board_variant = f"{self.package_directory}/variants/{self.name}/variant.h"
-        os.rename(
-            board_variant, board_variant.replace("/variant.h", "/variant_TEMPLATE.h")
+        # add extra GCC flags
+        if "crystalless" in self.d.keys() and self.d["crystalless"] != "0":
+            self.d["extra_flags"] += " -DCRYSTALLESS"
+
+        # add extra extra GCC flags
+        self.d["extra_flags"] += (
+            " " + config_file["additional_build_flags"]["extra_extra_flags"]
         )
 
-        # Run substitutions in all _TEMPLATE files
-        template_src_files = [
-            os.path.join(dp, f)
-            for dp, dn, filenames in os.walk(self.package_directory)
-            for f in filenames
-            if "_TEMPLATE" in f
-        ]
-        for file_name in template_src_files:
-            if os.path.isfile(file_name):
-                print(f"Processing template for {file_name}")
-                self.process_file(
-                    file_name,
-                    file_name.replace("_TEMPLATE", ""),
-                )
-
-        # rename the pio boards file
-        boards_dir = self.package_directory + "/boards"
-        pio_boards_json_name = (
-            boards_dir
-            + "/"
-            + self.d["vendor_name"]
-            + "_"
-            + self.d["board_name"]
-            + ".json"
-        )
-        os.rename(f"{boards_dir}/pio_board.json", pio_boards_json_name)
-
-    def check_uf2_version(self):
-        print("Checking the tag of the latest release of Adafruit's uf2 repo...")
-        response = requests.get(
-            "https://api.github.com/repos/adafruit/uf2-samdx1/releases/latest"
-        )
-        latest_release_tag = response.json()["tag_name"]
-        self.d["uf2_version_tag"] = latest_release_tag
-        print(
-            f"The latest release of Adafruit's uf2 repo is tag {latest_release_tag}, published {response.json()['published_at']}"
-        )
-
-    def clone_uf2_repo(self):
-        print("Cloning Adafruit's uf2 repo...")
-        with open(
-            f"{self.build_directory}/bootloader_build_log.txt", "w", encoding="UTF-8"
-        ) as logfile:
-            command = f"git clone --depth 1 --branch {self.d['uf2_version_tag']} https://github.com/adafruit/uf2-samdx1.git {self.build_directory}/uf2-samdx1"
-            git_process = subprocess.run(
-                command,
-                shell=True,
-                stdout=logfile,
-                stderr=subprocess.STDOUT,
-                text=True,
-            )
-            if git_process.returncode:
-                print(
-                    "Cloning Adafruit uf2 repo failed. Please see the log file for details"
-                )
-            else:
-                print("Successfully cloned latest Adafruit uf2 repo")
+    def check_missing_values(self, dictionary):
+        for key, value in dictionary.items():
+            if not value:
+                print(f"No value provided for {key}")
+                raise RuntimeError("Missing configuration parameters")
 
     # creates board.mk file in given directory
     # this is needed to make/build the bootloader
@@ -334,7 +194,7 @@ class SAMDconfig:
 
     # creates board_config.h file in given directory
     # this is used to make/build the bootloader
-    def write_board_config(self, dest_directory):
+    def write_board_config(self, dest_directory, package_dict):
         print(f"Writing board_config.h file to {dest_directory}/board_config.h")
         with open(
             f"{dest_directory}/board_config.h", "w", encoding="UTF-8"
@@ -342,7 +202,7 @@ class SAMDconfig:
             board_config.write("#ifndef BOARD_CONFIG_H\n")
             board_config.write("#define BOARD_CONFIG_H\n\n")
             board_config.write(
-                '#define VENDOR_NAME      "' + self.d["vendor_name_long"] + '"\n'
+                '#define VENDOR_NAME      "' + package_dict["vendor_name_long"] + '"\n'
             )
             board_config.write(
                 '#define PRODUCT_NAME     "' + self.d["board_name_long"] + '"\n'
@@ -351,7 +211,7 @@ class SAMDconfig:
                 '#define VOLUME_LABEL     "' + self.d["volume_label"] + '"\n'
             )
             board_config.write(
-                '#define INDEX_URL        "' + self.d["info_url"] + '"\n\n'
+                '#define INDEX_URL        "' + package_dict["info_url"] + '"\n\n'
             )
             board_id = self.chip_variant + "-" + self.d["board_define_name"] + "-v0"
             board_config.write('#define BOARD_ID         "' + board_id + '"\n\n')
@@ -401,6 +261,397 @@ class SAMDconfig:
                 padded_key = key.ljust(27).upper()
                 board_config.write(f"#define {padded_key} {value}\n")
             board_config.write("#endif\n")
+
+    def build_bootloader(self, new_env=None):
+        print(f"Starting GNU make for {self.name}...")
+        with open(
+            f"../{self.name}_bootloader_build_log.txt", "a", encoding="UTF-8"
+        ) as logfile:
+            command = f"make BOARD={self.name} VERSION={self.board_version}"
+            make_process = subprocess.run(
+                command,
+                shell=True,
+                env=new_env,
+                stdout=logfile,
+                stderr=subprocess.STDOUT,
+                text=True,
+            )
+            if make_process.returncode:
+                print(
+                    f"Making bootloader failed for {self.name}. Please see the log file ../{self.name}_bootloader_build_log.txt for details"
+                )
+            else:
+                print(f"Successfully built bootloader for {self.name}")
+
+
+class SAMDPackage:
+    # constructor
+    def __init__(self, dirname):
+        print(f"Reading package config from {dirname}")
+        self.config_directory = dirname
+        self.boards_config: list[SAMDConfig] = []
+        # dictionary containing all config data
+        self.d = {}
+        self.d["build_date"] = date.today().isoformat()
+        # read all values from main sections of config file
+        config_file = configparser.ConfigParser()
+        config_file.read(os.path.join(dirname, "package-config.ini"))
+        for s in ["vendor", "package", "paths"]:
+            for key, value in config_file[s].items():
+                self.d[key] = value
+                if key == "package_define_name" and value == "":
+                    self.d["package_define_name"] = (
+                        self.d["package_name"].lower().replace(" ", "_")
+                    )
+
+        # check for empty values
+        self.check_missing_values(self.d)
+
+        # define common properties
+        self.package_version = self.d["package_version"]
+        package_version_parsed = Version(self.d["package_version"])
+        self.d["package_version_major"] = package_version_parsed.major
+        self.d["package_version_minor"] = package_version_parsed.minor
+        self.d["package_version_patch"] = package_version_parsed.micro
+
+        # read all board configuration data
+        print("Reading board configs...")
+        self.read_board_configs()
+
+    def check_missing_values(self, dictionary):
+        for key, value in dictionary.items():
+            if not value:
+                print(f"No value provided for {key}")
+                raise RuntimeError("Missing configuration parameters")
+
+    def read_board_configs(self):
+        for board_dir in os.listdir(self.config_directory):
+            if (
+                not os.path.isdir(os.path.join(self.config_directory, board_dir))
+                or "your-variant" in board_dir
+            ):
+                continue
+            board_config_path = os.path.join(
+                self.config_directory, board_dir, "board-config.ini"
+            )
+            print(f"Looking for board config at {board_config_path}")
+            if os.path.isfile(board_config_path) and "EXAMPLE" not in board_config_path:
+                print(f"Reading config for board {board_dir}")
+                board_config = SAMDConfig(board_config_path)
+                board_config.d["board_dir"] = os.path.join(
+                    self.config_directory, board_dir
+                )
+                # add flag for the board name
+                board_config.d[
+                    "extra_flags"
+                ] += f" -D{self.d['vendor_name'].upper()}_{board_config.d['board_name_upper']}"
+                board_config.d["extra_flags_pio"] = board_config.d["extra_flags"].split(
+                    " "
+                )
+                # remove the duplicate flags added by default by PlatformIO
+                board_config.d["extra_flags_pio"] = [
+                    flag
+                    for flag in board_config.d["extra_flags_pio"]
+                    if flag not in ["-mfloat-abi=hard", "-mfpu=fpv4-sp-d16"]
+                ]
+                if board_config.is_samd51:
+                    # enable the cache
+                    # this is done in a special cache flag for the Arduino IDE, but in the build flags for PlatformIO
+                    board_config.d["extra_flags_pio"].append("-DENABLE_CACHE")
+                # convert to json-esque string
+                board_config.d["extra_flags_pio"] = json.dumps(
+                    board_config.d["extra_flags_pio"]
+                )
+                self.boards_config.append(board_config)
+            else:
+                print(f"No config file found for board {board_dir}, skipping.")
+
+    # reads template file, does all substitutions from the dictionary, saves result as destination
+    # source and destination should be filenames
+    def process_file(self, source, destination, sub_dict=None):
+        print(f"Processing template file {source} to create {destination}")
+        if sub_dict is None:
+            sub_dict = self.d
+
+        # open the template file
+        with open(source, "r", encoding="UTF-8") as template_file:
+            original = template_file.read()
+
+        # make substitutions
+        new_data = Template(original).substitute(sub_dict)
+
+        # write the new file
+        with open(destination, "w", encoding="UTF-8") as dest_file:
+            dest_file.write(new_data)
+
+        # delete the template file
+        os.remove(source)
+
+    def setup_build_directory(self):
+        # directory for the built package
+        self.build_directory = os.path.join(
+            os.path.dirname(self.config_directory), "build"
+        )
+        self.package_directory = os.path.join(self.build_directory, "current")
+        print(f"Setting up build directory at {self.package_directory}")
+        # remove old build directory, if it exists
+        print("Checking for and deleting the content of existing stale build directory")
+        if os.path.exists(self.build_directory):
+            print("Removing old build directory")
+            shutil.rmtree(self.build_directory, onexc=remove_readonly)
+
+        # copy the template directory into the build directory
+        print("Copying the template directory")
+        shutil.copytree("PACKAGE_TEMPLATE", self.package_directory)
+
+        # select which fuse setting script to keep
+        fuses_dir = self.package_directory + "/scripts/fuses"
+
+        # delete irrelevant the fuse-setting scripts
+        fuse_src_files = [
+            os.path.join(dp, f)
+            for dp, dn, filenames in os.walk(fuses_dir)
+            for f in filenames
+        ]
+        for file_name in fuse_src_files:
+            if os.path.isfile(file_name) and any(
+                chip not in file_name
+                for chip in [board.chip_family.lower() for board in self.boards_config]
+            ):
+                os.remove(file_name)
+
+        # copy the variants directories
+        variants_dir = os.path.join(self.package_directory, "variants")
+        for board in self.boards_config:
+            print(f"Duplicating the board template directory for board {board.name}")
+            dest_board_variant = os.path.join(variants_dir, board.name)
+            shutil.copytree(
+                os.path.join(variants_dir, "variant_template"),
+                dest_board_variant,
+                dirs_exist_ok=True,
+            )
+            print(
+                f"Copying variant files for board {board.name} from {board.d['board_dir']} into build directory at {dest_board_variant}"
+            )
+
+            if os.path.isfile(
+                os.path.join(board.d["board_dir"], "variant.h")
+            ) and os.path.isfile(os.path.join(board.d["board_dir"], "variant.cpp")):
+                # move the hand written variants files into the board variant directory
+                shutil.copy2(
+                    os.path.join(board.d["board_dir"], "variant.cpp"),
+                    dest_board_variant,
+                )
+                shutil.copy2(
+                    os.path.join(board.d["board_dir"], "variant.h"), dest_board_variant
+                )
+            else:
+                print(
+                    f"No variant.h or variant.cpp file found for board {board.name} in {board.d['board_dir']}, skipping copying of these files."
+                )
+
+            # Add filenames to the dictionary
+            board.d["bootloader_dir"] = (
+                f"{self.build_directory}/uf2-samdx1/build/{board.name}"
+            )
+            board.d["bootloader_buildname"] = (
+                f"bootloader-{board.name}-{self.d['uf2_version_tag']}"
+            )
+            board.d["bootloader_versioned_name"] = (
+                f"bootloader-{board.name}-{board.board_version}-uf2{self.d['uf2_version_tag']}"
+            )
+            board.d["bootloader_filename"] = (
+                f"{board.d['bootloader_versioned_name']}.bin"
+            )
+
+        # delete the variant template directory after copying the files we need from it
+        print("Deleting the raw board template directory")
+        shutil.rmtree(
+            os.path.join(variants_dir, "variant_template"), onexc=remove_readonly
+        )
+
+    def build_bootloaders(self):
+        # first, get paths
+        new_env = self.get_paths()
+        os.chdir("build/uf2-samdx1")
+        if self.d["build_os"].lower() == "windows":
+            self.update_make_for_windows()
+        # run make to build bootloader
+        for board in self.boards_config:
+            board.build_bootloader(new_env)
+
+        # move back to base directory
+        os.chdir("../..")
+
+    # creates platform.txt, version and README.md files, by processing template files in package directory
+    # these are used by the Arduino IDE
+    def write_platform_templates(self):
+        # create template sub-directories for each board and copy the relevant template files into them
+        board_files_to_copy = [
+            {
+                "template_dir": os.path.join(self.package_directory, "boards"),
+                "src_file": "pio_board_TEMPLATE.json",
+            },
+            {"template_dir": self.package_directory, "src_file": "boards_TEMPLATE.txt"},
+            {
+                "template_dir": self.package_directory,
+                "src_file": "VARIANT_VERSION_TEMPLATE.h",
+            },
+            {
+                "template_dir": os.path.join(
+                    self.package_directory, "scripts", "jlink"
+                ),
+                "src_file": "debug_custom_TEMPLATE.json",
+            },
+            {
+                "template_dir": os.path.join(
+                    self.package_directory, "scripts", "openocd"
+                ),
+                "src_file": "daplink_samdx1_TEMPLATE.cfg",
+            },
+            {
+                "template_dir": os.path.join(
+                    self.package_directory, "scripts", "openocd"
+                ),
+                "src_file": "jlink_samdx1_TEMPLATE.cfg",
+            },
+        ]
+        for board in self.boards_config:
+            print(f"Customizing special template files for board {board.name}")
+            for file_info in board_files_to_copy:
+                dest_file = (
+                    file_info["src_file"]
+                    .replace("_TEMPLATE", "_" + board.name + "_TEMPLATE")
+                    .replace("pio_board", self.d["vendor_name"])
+                )
+
+                # make a **copy** of the template
+                shutil.copy2(
+                    os.path.join(file_info["template_dir"], file_info["src_file"]),
+                    os.path.join(file_info["template_dir"], dest_file),
+                )
+                # process the template file
+                self.process_file(
+                    os.path.join(file_info["template_dir"], dest_file),
+                    os.path.join(
+                        file_info["template_dir"], dest_file.replace("_TEMPLATE", "")
+                    ),
+                    board.d | self.d,
+                )
+
+            # after processing the other templates, grab the variant version macros from the generated version file to insert into the pins_arduino.h file for the board
+            with open(
+                os.path.join(
+                    self.package_directory, "VARIANT_VERSION_" + board.name + ".h"
+                ),
+                "r",
+                encoding="UTF-8",
+            ) as version_file:
+                board.d["variant_version_macros"] = version_file.read()
+            os.remove(
+                os.path.join(
+                    self.package_directory, "VARIANT_VERSION_" + board.name + ".h"
+                )
+            )
+
+            # Run substitutions in all remaining _TEMPLATE files in the variants directory
+            print(f"Customizing remaining template files for board {board.name}")
+            variant_dir = os.path.join(self.package_directory, "variants", board.name)
+            template_src_files = [
+                os.path.join(dp, f)
+                for dp, dn, filenames in os.walk(variant_dir)
+                for f in filenames
+                if "_TEMPLATE" in f
+            ]
+            for file_name in template_src_files:
+                if os.path.isfile(file_name):
+                    print(f"Processing template for {file_name}")
+                    self.process_file(
+                        file_name,
+                        file_name.replace("_TEMPLATE", ""),
+                        board.d | self.d,
+                    )
+
+        # delete the template files we made copies of instead of simply moving
+        print("Deleting template files that were copied for processing")
+        for file_info in board_files_to_copy:
+            os.remove(os.path.join(file_info["template_dir"], file_info["src_file"]))
+
+        # combine the boards template files into a single file with all boards, and delete the individual board template files
+        print(
+            "Combining individual board template files into a single boards.txt file and deleting the individual files"
+        )
+        combined_boards = []
+        with open(
+            os.path.join(self.package_directory, "boards_header.txt"),
+            "r",
+            encoding="UTF-8",
+        ) as board_file:
+            combined_boards.append(board_file.read())
+        combined_boards.append("\n")
+        os.remove(os.path.join(self.package_directory, "boards_header.txt"))
+        for board in self.boards_config:
+            print(
+                f"Opening file for board {board.name} at {os.path.join(self.package_directory, f'boards_{board.name}.txt')}"
+            )
+            with open(
+                os.path.join(self.package_directory, f"boards_{board.name}.txt"),
+                "r",
+                encoding="UTF-8",
+            ) as board_file:
+                combined_boards.append(board_file.read())
+            combined_boards.append("\n")
+            print(
+                f"Deleting individual board file for board {board.name} at {os.path.join(self.package_directory, f'boards_{board.name}.txt')}"
+            )
+            os.remove(os.path.join(self.package_directory, f"boards_{board.name}.txt"))
+        with open(
+            os.path.join(self.package_directory, "boards.txt"), "w", encoding="UTF-8"
+        ) as combined_file:
+            combined_file.write("\n".join(combined_boards))
+
+        # Run substitutions in all remaining _TEMPLATE files in the package directory
+        template_src_files = [
+            os.path.join(dp, f)
+            for dp, dn, filenames in os.walk(self.package_directory)
+            for f in filenames
+            if "_TEMPLATE" in f
+        ]
+        for file_name in template_src_files:
+            if os.path.isfile(file_name):
+                print(f"Processing template for {file_name}")
+                self.process_file(file_name, file_name.replace("_TEMPLATE", ""))
+
+    def check_uf2_version(self):
+        print("Checking the tag of the latest release of Adafruit's uf2 repo...")
+        response = requests.get(
+            "https://api.github.com/repos/adafruit/uf2-samdx1/releases/latest"
+        )
+        latest_release_tag = response.json()["tag_name"]
+        self.d["uf2_version_tag"] = latest_release_tag
+        print(
+            f"The latest release of Adafruit's uf2 repo is tag {latest_release_tag}, published {response.json()['published_at']}"
+        )
+
+    def clone_uf2_repo(self):
+        print("Cloning Adafruit's uf2 repo...")
+        with open(
+            f"{self.build_directory}/bootloader_clone_log.txt", "w", encoding="UTF-8"
+        ) as logfile:
+            command = f"git clone --depth 1 --branch {self.d['uf2_version_tag']} https://github.com/adafruit/uf2-samdx1.git {self.build_directory}/uf2-samdx1"
+            git_process = subprocess.run(
+                command,
+                shell=True,
+                stdout=logfile,
+                stderr=subprocess.STDOUT,
+                text=True,
+            )
+            if git_process.returncode:
+                print(
+                    "Cloning Adafruit uf2 repo failed. Please see the log file for details"
+                )
+            else:
+                print("Successfully cloned latest Adafruit uf2 repo")
 
     # gets all necessary paths for GCC and make and adds them to PATH
     # returns environment with these paths
@@ -452,9 +703,9 @@ class SAMDconfig:
         }
 
         os.rename("Makefile", "archive_Makefile")
-        with open("archive_Makefile") as infile, open("Makefile", "w") as outfile:
+        with open("archive_Makefile") as in_file, open("Makefile", "w") as outfile:
             i = 1
-            for line in infile:
+            for line in in_file:
                 # print(i, line)
                 for src, target in replacements.items():
                     # print(src)
@@ -463,37 +714,15 @@ class SAMDconfig:
                 outfile.write(line)
                 i += 1
 
-    def build_bootloader(self):
-        # first, get paths
-        new_env = self.get_paths()
-        os.chdir("build/uf2-samdx1")
-        if self.d["build_os"].lower() == "windows":
-            self.update_make_for_windows()
-        # run make to build bootloader
-        print("Starting GNU make...")
-        with open("../bootloader_build_log.txt", "a", encoding="UTF-8") as logfile:
-            command = f"make BOARD={self.name} VERSION={self.version}"
-            make_process = subprocess.run(
-                command,
-                shell=True,
-                env=new_env,
-                stdout=logfile,
-                stderr=subprocess.STDOUT,
-                text=True,
-            )
-            if make_process.returncode:
-                print("Making bootloader failed. Please see the log file for details")
-            else:
-                print("Successfully built bootloader")
-
-        # move back to base directory
-        os.chdir("../..")
-
     # compress already constructed package directory into a zip archive and
     # record archive size and SHA256 checksum
     def package_archive(self):
-        # archive_filename = f"{self.build_directory}/{self.name}-{self.version}"
-        archive_filename = f"{self.build_directory}/{self.d['package_name'].replace(' ','').lower()}-{self.version}"
+        # archive_filename = f"{self.config_directory}/{self.name}-{self.version}"
+        archive_filename = os.path.join(
+            self.build_directory,
+            f"{self.d['package_name'].replace(' ','').lower()}-{self.package_version}",
+        )
+        print(f"Creating package archive at {archive_filename}.zip")
         zip_archive = shutil.make_archive(
             archive_filename,
             "zip",
@@ -511,7 +740,9 @@ class SAMDconfig:
             f"Created package archive, size {archive_size} bytes,\n SHA256 hash: {hash}"
         )
         # add the info to dictionary
-        self.d["archive_filename"] = archive_filename
+        self.d["archive_filename"] = (
+            archive_filename.replace("build/", "").replace("build\\\\", "") + ".zip"
+        )
         self.d["archive_size"] = archive_size
         self.d["archive_checksum"] = hash
 
@@ -588,16 +819,15 @@ class SAMDconfig:
             "architecture": "samd",
             "version": self.d["package_version"],
             "category": "Contributed",
-            "url": self.d["package_url"]
-            + self.d["archive_filename"].replace("build/", "")
-            + ".zip",
-            "archiveFileName": self.d["archive_filename"].replace("build/", "")
-            + ".zip",
+            "url": self.d["package_url"] + self.d["archive_filename"],
+            "archiveFileName": self.d["archive_filename"],
             "checksum": "SHA-256:" + self.d["archive_checksum"],
             "size": self.d["archive_size"],
-            "boards": [{"name": self.d["board_name_long"]}],
+            "boards": [],
             "toolsDependencies": [],
         }
+        for board in self.boards_config:
+            samd_current["boards"].append({"name": board.d["board_name_long"]})
         # add the new platform entry to the package
         existing_platforms.append(samd_current)
         packages["packages"][0]["platforms"] = copy.deepcopy(existing_platforms)
@@ -612,4 +842,4 @@ class SAMDconfig:
     def clean_build_directory(self):
         # remove cloned repo
         if os.path.exists(f"{self.build_directory}/uf2-samdx1"):
-            shutil.rmtree(f"{self.build_directory}/uf2-samdx1", onerror=remove_readonly)
+            shutil.rmtree(f"{self.build_directory}/uf2-samdx1", onexc=remove_readonly)

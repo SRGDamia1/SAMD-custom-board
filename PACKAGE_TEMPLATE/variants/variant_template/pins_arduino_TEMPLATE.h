@@ -16,6 +16,7 @@
   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
+// ${variant_version_macros}
+
 // API compatibility
 #include "variant.h"
-

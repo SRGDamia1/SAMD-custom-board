@@ -17,8 +17,8 @@
 */
 
 // clang-format off
-#ifndef _VARIANT_${board_define_name}_
-#define _VARIANT_${board_define_name}_
+#ifndef _VARIANT_YOUR_VARIANT_
+#define _VARIANT_YOUR_VARIANT_
 // clang-format on
 
 // The definitions here needs a SAMD core >=1.6.10
@@ -54,36 +54,6 @@
 extern "C"
 {
 #endif // __cplusplus
-
-    /*----------------------------------------------------------------------------
-     *        Version Information
-     *
-     * Don't change this; it is used as a template!
-     *----------------------------------------------------------------------------*/
-    // clang-format off
-/** Major version number (X.x.x) */
-#define ${board_define_name}_VERSION_MAJOR $package_version_major
-/** Minor version number (x.X.x) */
-#define ${board_define_name}_VERSION_MINOR $package_version_minor
-/** Patch version number (x.x.X) */
-#define ${board_define_name}_VERSION_PATCH $package_version_patch
-
-/**
- * Macro to convert version number into an integer
- *
- * To be used in comparisons, such as ${board_define_name}_VERSION >= ${board_define_name}_VERSION_VAL(4, 0, 0)
- */
-#define ${board_define_name}_VERSION_VAL(major, minor, patch) ((major << 16) | (minor << 8) | (patch))
-
-/**
- * Current Board version, as an integer
- *
- * To be used in comparisons, such as ${board_define_name}_VERSION >= ${board_define_name}_VERSION_VAL(4, 0, 0)
- */
-#define ${board_define_name}_VERSION ${board_define_name}_VERSION_VAL(${board_define_name}_VERSION_MAJOR, \
-                                                                       ${board_define_name}_VERSION_MINOR, \
-                                                                       ${board_define_name}_VERSION_PATCH)
-// clang-format on
 
 /*----------------------------------------------------------------------------
  *        Pins
@@ -504,6 +474,6 @@ extern Uart Serial1;
  * Put other defines that will be convenient for your users or libraries here.
  *----------------------------------------------------------------------------*/
 
-#endif /* _VARIANT_${board_define_name}_ */
+#endif /* _VARIANT_YOUR_VARIANT_ */
 
 // cSpell:words RXPO DIPO DOPO MSSEN SYNCBUSY PERIPH XCLK LINUXBRIDGE

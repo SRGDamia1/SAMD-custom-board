@@ -1,29 +1,3 @@
-# Copyright (c) 2014-2015 Arduino LLC.  All right reserved.
-#
-# This library is free software; you can redistribute it and/or
-# modify it under the terms of the GNU Lesser General Public
-# License as published by the Free Software Foundation; either
-# version 2.1 of the License, or (at your option) any later version.
-#
-# This library is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-# See the GNU Lesser General Public License for more details.
-#
-# You should have received a copy of the GNU Lesser General Public
-# License along with this library; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
-
-# based on Adafruit's board support package for SAMD boards, version 1.7.13
-
-menu.cache=Cache
-menu.speed=CPU Speed
-menu.opt=Optimize
-menu.maxqspi=Max QSPI
-menu.usbstack=USB Stack
-menu.debug=Debug
-
-
 # -----------------------------------
 # $board_name_long ($chip_family)
 # -----------------------------------
@@ -52,6 +26,7 @@ $board_name.build.core=adafruit:arduino
 $board_name.build.extra_flags=$extra_flags {build.usb_flags}
 $board_name.build.ldscript=linker_scripts/gcc/flash_with_bootloader.ld
 $board_name.build.openocdscript=$openocdscript
+#$board_name.build.jlinkscript=$jlinkscript
 $board_name.build.variant=$board_name
 $board_name.build.variant_system_lib=
 $board_name.build.vid=$usb_vid
@@ -67,7 +42,6 @@ $menu_cache
 
 # Menu: Speed (only for SAMD51/SAME51)
 $menu_speed
-
 
 # Menu: Optimization
 $board_name.menu.opt.small=Small (-Os) (standard)

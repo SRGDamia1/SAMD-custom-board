@@ -14,7 +14,8 @@
     "mcu": "$chip_variant_lower",
     "system": "samd",
     "usb_product": "$board_name_long",
-    "variant": "$board_name"
+    "variant": "$board_name",
+    "variant_framework": "framework-arduino-samd-$vendor_name"
   },
   "upload": {
     "disable_flushing": true,

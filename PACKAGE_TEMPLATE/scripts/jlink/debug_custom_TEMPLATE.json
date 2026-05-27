@@ -1,6 +1,6 @@
 {
   "servertype": "jlink",
-  "device": "SAMD51N19A",
+  "device": "$chip_variant",
   "interface": "SWD",
   "serverpath": "JLinkGDBServer"
 }
