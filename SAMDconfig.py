@@ -27,6 +27,56 @@ def remove_readonly(func, path, _):
     func(path)
 
 
+# Source - https://stackoverflow.com/a/1144405
+# Posted by hughdbrown, modified by community. See post 'Timeline' for change history
+# Retrieved 2026-05-28, License - CC BY-SA 4.0
+
+from operator import itemgetter as i
+from functools import cmp_to_key
+
+
+def cmp(x, y):
+    """
+    Replacement for built-in function cmp that was removed in Python 3
+
+    Compare the two objects x and y and return an integer according to
+    the outcome. The return value is negative if x < y, zero if x == y
+    and strictly positive if x > y.
+
+    https://portingguide.readthedocs.io/en/latest/comparisons.html#the-cmp-function
+    """
+
+    return (x > y) - (x < y)
+
+
+def multikeysort(items, columns, functions={}, getter=i):
+    """Sort a list of dictionary objects or objects by multiple keys bidirectionally.
+    Keyword Arguments:
+    items -- A list of dictionary objects or objects
+    columns -- A list of column names to sort by. Use -column to sort in descending order
+    functions -- A Dictionary of Column Name -> Functions to normalize or process each column value
+    getter -- Default "getter" if column function does not exist
+              operator.itemgetter for Dictionaries
+              operator.attrgetter for Objects
+    """
+    comparers = []
+    for col in columns:
+        column = col[1:] if col.startswith("-") else col
+        if not column in functions:
+            functions[column] = getter(column)
+        comparers.append((functions[column], 1 if column == col else -1))
+
+    def comparer(left, right):
+        for func, polarity in comparers:
+            result = cmp(func(left), func(right))
+            if result:
+                return polarity * result
+        else:
+            return 0
+
+    return sorted(items, key=cmp_to_key(comparer))
+
+
 class SAMDConfig:
     # constructor
     def __init__(self, filename):
@@ -831,6 +881,11 @@ class SAMDPackage:
             samd_current["boards"].append({"name": board.d["board_name_long"]})
         # add the new platform entry to the package
         existing_platforms.append(samd_current)
+        existing_platforms = multikeysort(
+            existing_platforms,
+            ["architecture", "name", "-version"],
+            functions={"version": lambda x: Version(x["version"])},
+        )
         packages["packages"][0]["platforms"] = copy.deepcopy(existing_platforms)
 
         # now save to json
