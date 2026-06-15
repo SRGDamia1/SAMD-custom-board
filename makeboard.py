@@ -52,14 +52,25 @@ for board in package.boards_config:
         full_file_name = os.path.join(board.d["bootloader_dir"], file_name)
         if (
             os.path.isfile(full_file_name)
-            and board.d["bootloader_buildname"] in full_file_name
+            and board.d["bootloader_build_name"] in full_file_name
             and "map" not in full_file_name
             and "update" not in full_file_name
         ):
+            print(f"Copying from {full_file_name} to {full_file_name}")
             shutil.copy(full_file_name, bootloader_dest)
-            new_filename = file_name.replace(
-                board.d["bootloader_buildname"],
-                board.d["bootloader_versioned_name"],
+            new_filename = (
+                file_name.replace(
+                    board.d["bootloader_build_name"],
+                    board.d["bootloader_versioned_name"],
+                )
+                .replace(
+                    f"{board.d['bootloader_versioned_name']}dirty",
+                    board.d["bootloader_versioned_name"],
+                )
+                .replace(
+                    f"{board.d['bootloader_versioned_name']}+",
+                    board.d["bootloader_versioned_name"],
+                )
             )
             # rename from the UF2 version set by make to the configured version
             print(
@@ -77,7 +88,7 @@ for board in package.boards_config:
 #     if os.path.isfile(full_file_name):
 #         shutil.copy(full_file_name, bootloader_dest)
 # also, copy the main bin to the top of build directory
-# shutil.copy(f"{board.d['bootloader_dir']}/{board.d['bootloader_buildname']}.bin", board.build_directory)
+# shutil.copy(f"{board.d['bootloader_dir']}/{board.d['bootloader_build_name']}.bin", board.build_directory)
 
 # compressing directory into zip archive
 print("\nCompressing the package archive")

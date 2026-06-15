@@ -263,7 +263,12 @@ class SAMDConfig:
             board_config.write(
                 '#define INDEX_URL        "' + package_dict["info_url"] + '"\n\n'
             )
-            board_id = self.chip_variant + "-" + self.d["board_define_name"] + "-v0"
+            board_id = (
+                self.chip_variant
+                + "-"
+                + self.d["board_define_name"]
+                + f"-v{self.board_version}"
+            )
             board_config.write('#define BOARD_ID         "' + board_id + '"\n\n')
             board_config.write("#define USB_VID          " + self.d["usb_vid"] + "\n")
             board_config.write("#define USB_PID          " + self.d["usb_pid"] + "\n")
@@ -317,7 +322,9 @@ class SAMDConfig:
         with open(
             f"../{self.name}_bootloader_build_log.txt", "a", encoding="UTF-8"
         ) as logfile:
-            command = f"make BOARD={self.name} VERSION={self.board_version}"
+            print(f"Logging build output to ../{self.name}_bootloader_build_log.txt")
+            command = f"make BOARD={self.name} VERSION={self.board_version} VERBOSE=1"
+            print(f"Running make command: {command}")
             make_process = subprocess.run(
                 command,
                 shell=True,
@@ -504,7 +511,7 @@ class SAMDPackage:
             board.d["bootloader_dir"] = (
                 f"{self.build_directory}/uf2-samdx1/build/{board.name}"
             )
-            board.d["bootloader_buildname"] = (
+            board.d["bootloader_build_name"] = (
                 f"bootloader-{board.name}-{self.d['uf2_version_tag']}"
             )
             board.d["bootloader_versioned_name"] = (
@@ -512,6 +519,9 @@ class SAMDPackage:
             )
             board.d["bootloader_filename"] = (
                 f"{board.d['bootloader_versioned_name']}.bin"
+            )
+            print(
+                f"Compiled bootloader for board {board.name} will be saved to {board.d['bootloader_dir']}/{board.d['bootloader_filename']}"
             )
 
         # delete the variant template directory after copying the files we need from it
