@@ -48,8 +48,8 @@ The OpenOCD script from the fuses on the SAMD51 started with the SAMD21 script, 
 ### Unlock the BOOTPROT "fuses"
 
 - Run the following OpenOCD command:
-  - SAMD21: `./openocd -d2 -s ..\share\openocd\scripts\ -c "set bootprot 0x7" -f "C:\Users\sdamiano\Documents\GitHub\EnviroDIY\SAMD-custom-board\build\current\scripts\fuses\openocd\samd21_fuses.tcl"`
-  - SAMD51: `./openocd -d2 -s ..\share\openocd\scripts\ -c "set bootprot 0x0F" -f "C:\Users\sdamiano\Documents\GitHub\EnviroDIY\SAMD-custom-board\build\current\scripts\fuses\openocd\samd51_fuses.tcl"`
+  - SAMD21: `./openocd -d2 -s ..\share\openocd\scripts\ -c "set bootprot 0x7" -f "C:\Users\sdamiano\Documents\GitHub\SRGDamia1\SAMD-custom-board\build\current\scripts\fuses\openocd\samd21_fuses.tcl"`
+  - SAMD51: `./openocd -d2 -s ..\share\openocd\scripts\ -c "set bootprot 0x0F" -f "C:\Users\sdamiano\Documents\GitHub\SRGDamia1\SAMD-custom-board\build\current\scripts\fuses\openocd\samd51_fuses.tcl"`
 
 Explanation of Command/Arguments:
 
@@ -64,19 +64,19 @@ Explanation of Command/Arguments:
     - `set bootprot 0x2` for SAMD-21 [0x2, 0b010 = 8KB protected (the size of the UF2 SAMD21 bootloader)]
     - `set bootprot 0x0D` for SAMD-51 [0x0D (13) for 16kb protected (the SAMD51 UF2 bootloader is 16kb)]
   - NOTE: *Use capital letters for the hex values:* `0x0F` **NOT** `0x0f`
-- `-f "C:\Users\sdamiano\Documents\GitHub\EnviroDIY\SAMD-custom-board\build\current\scripts\fuses\openocd\samd51_fuses.tcl"` runs the file with the fuse changing script
+- `-f "C:\Users\sdamiano\Documents\GitHub\SRGDamia1\SAMD-custom-board\build\current\scripts\fuses\openocd\samd51_fuses.tcl"` runs the file with the fuse changing script
 - See: <https://openocd.org/doc/html/Running.html#Running>
 
 #### Unlock and Factory Reset the Bootloader Fuses
 
 - Run the following OpenOCD command:
-  - SAMD21: `./openocd -d2 -s ..\share\openocd\scripts\ -c "set forceupdate 1; set bootprot 0x7" -f "C:\Users\sdamiano\Documents\GitHub\EnviroDIY\SAMD-custom-board\build\current\scripts\fuses\openocd\samd21_fuses.tcl"`
-  - SAMD51: `./openocd -d2 -s ..\share\openocd\scripts\ -c "set forceupdate 1; set bootprot 0x0F" -f "C:\Users\sdamiano\Documents\GitHub\EnviroDIY\SAMD-custom-board\build\current\scripts\fuses\openocd\samd51_fuses.tcl"`
+  - SAMD21: `./openocd -d2 -s ..\share\openocd\scripts\ -c "set forceupdate 1; set bootprot 0x7" -f "C:\Users\sdamiano\Documents\GitHub\SRGDamia1\SAMD-custom-board\build\current\scripts\fuses\openocd\samd21_fuses.tcl"`
+  - SAMD51: `./openocd -d2 -s ..\share\openocd\scripts\ -c "set forceupdate 1; set bootprot 0x0F" -f "C:\Users\sdamiano\Documents\GitHub\SRGDamia1\SAMD-custom-board\build\current\scripts\fuses\openocd\samd51_fuses.tcl"`
 
 ### Write the Bootloader
 
 - Run OpenOCD with these commands to program the board
-  - ```./openocd -d2 -s ..\share\openocd\scripts\ -f "C:\Users\sdamiano\Documents\GitHub\EnviroDIY\SAMD-custom-board\build\current\scripts\openocd\daplink_samdx1.cfg" -c "telnet_port disabled; init; reset halt; `$_FLASHDRIVER chip-erase; program C:/Users/sdamiano/Documents/GitHub/EnviroDIY/SAMD-custom-board/build/current/bootloaders/stonefly_m4/bootloader-stonefly_m4-0.3.7-uf2v4.0.0.bin verify reset; shutdown"```
+  - ```./openocd -d2 -s ..\share\openocd\scripts\ -f "C:\Users\sdamiano\Documents\GitHub\SRGDamia1\SAMD-custom-board\build\current\scripts\openocd\daplink_samdx1_stonefly_m4.cfg" -c "telnet_port disabled; init; reset halt; `$_FLASHDRIVER chip-erase; program C:/Users/sdamiano/Documents/GitHub/SRGDamia1/SAMD-custom-board/build/current/bootloaders/stonefly_m4/bootloader-stonefly_m4-0.3.7-uf2v4.0.0.bin verify reset; shutdown"```
 
 Explanation of Command/Arguments:
 
@@ -100,8 +100,8 @@ This is essentially the same procedure as un-locking the boot protection fuses, 
 See the locking section for a detailed explanation of the commands
 
 - Run the following OpenOCD command:
-  - SAMD21: `./openocd -d2 -s ..\share\openocd\scripts\ -c "set bootprot 0x2" -f "C:\Users\sdamiano\Documents\GitHub\EnviroDIY\SAMD-custom-board\build\current\scripts\fuses\openocd\samd21_fuses.tcl"`
-  - SAMD51: `./openocd -d2 -s ..\share\openocd\scripts\ -c "set bootprot 0x0D" -f "C:\Users\sdamiano\Documents\GitHub\EnviroDIY\SAMD-custom-board\build\current\scripts\fuses\openocd\samd51_fuses.tcl"`
+  - SAMD21: `./openocd -d2 -s ..\share\openocd\scripts\ -c "set bootprot 0x2" -f "C:\Users\sdamiano\Documents\GitHub\SRGDamia1\SAMD-custom-board\build\current\scripts\fuses\openocd\samd21_fuses.tcl"`
+  - SAMD51: `./openocd -d2 -s ..\share\openocd\scripts\ -c "set bootprot 0x0D" -f "C:\Users\sdamiano\Documents\GitHub\SRGDamia1\SAMD-custom-board\build\current\scripts\fuses\openocd\samd51_fuses.tcl"`
 
 ## Install the Bootloader with OpenOCD and a DAPLink Device (v2)
 
@@ -117,8 +117,8 @@ See the locking section for a detailed explanation of the commands
 - Within the terminal, change directories to the the installation directory of OpenOCD within the Arduino15 directory
   - `cd "C:\Users\sdamiano\AppData\Local\Arduino15\packages\arduino\tools\openocd\0.11.0-arduino2\bin"`
 - Run the following OpenOCD command:
-  - SAMD51: ```./openocd -d2 -s ..\share\openocd\scripts\ -f "C:\Users\sdamiano\Documents\GitHub\EnviroDIY\SAMD-custom-board\build\current\scripts\openocd\daplink_samdx1.cfg" -c "telnet_port disabled; init; reset halt; `$_FLASHDRIVER bootloader 0; `$_FLASHDRIVER chip-erase; reset; program C:/Users/sdamiano/Documents/GitHub/EnviroDIY/SAMD-custom-board/build/current/bootloaders/stonefly_m4/bootloader-stonefly_m4-0.0.4-uf2v4.0.0.bin verify reset; reset halt; `$_FLASHDRIVER bootloader 16384; shutdown"```
-  - SAMD21: ```./openocd -d2 -s ..\share\openocd\scripts\ -f "C:\Users\sdamiano\Documents\GitHub\EnviroDIY\SAMD-custom-board\build\current\scripts\openocd\daplink_samdx1.cfg" -c "telnet_port disabled; init; reset halt; `$_FLASHDRIVER bootloader 0; `$_FLASHDRIVER chip-erase; program C:/Users/sdamiano/Documents/GitHub/EnviroDIY/SAMD-custom-board/build/current/bootloaders/stonefly_m4/bootloader-stonefly_m4-0.0.4-uf2v4.0.0.bin verify reset; reset halt; `$_FLASHDRIVER bootloader 8192; shutdown"```
+  - SAMD51: ```./openocd -d2 -s ..\share\openocd\scripts\ -f "C:\Users\sdamiano\Documents\GitHub\SRGDamia1\SAMD-custom-board\build\current\scripts\openocd\daplink_samdx1.cfg" -c "telnet_port disabled; init; reset halt; `$_FLASHDRIVER bootloader 0; `$_FLASHDRIVER chip-erase; reset; program C:/Users/sdamiano/Documents/GitHub/SRGDamia1/SAMD-custom-board/build/current/bootloaders/stonefly_m4/bootloader-stonefly_m4-0.0.4-uf2v4.0.0.bin verify reset; reset halt; `$_FLASHDRIVER bootloader 16384; shutdown"```
+  - SAMD21: ```./openocd -d2 -s ..\share\openocd\scripts\ -f "C:\Users\sdamiano\Documents\GitHub\SRGDamia1\SAMD-custom-board\build\current\scripts\openocd\daplink_samdx1.cfg" -c "telnet_port disabled; init; reset halt; `$_FLASHDRIVER bootloader 0; `$_FLASHDRIVER chip-erase; program C:/Users/sdamiano/Documents/GitHub/SRGDamia1/SAMD-custom-board/build/current/bootloaders/stonefly_m4/bootloader-stonefly_m4-0.0.4-uf2v4.0.0.bin verify reset; reset halt; `$_FLASHDRIVER bootloader 8192; shutdown"```
 
 Explanation of Command/Arguments:
 
@@ -172,8 +172,8 @@ This would be significantly better (though much more complex) than hard-writing 
 ### Unlock the BOOTPROT "fuses"
 
 - Load the memory file that will clear the boot loader protection fuse
-  - for SAMD21: `loadfile C:\Users\sdamiano\Documents\GitHub\EnviroDIY\SAMD-custom-board\fuses\jlink\SAMD21_clear_BOOTPROT.mot`
-  - for SAMD51: `loadfile C:\Users\sdamiano\Documents\GitHub\EnviroDIY\SAMD-custom-board\fuses\jlink\SAMD51_clear_BOOTPROT.mot`
+  - for SAMD21: `loadfile C:\Users\sdamiano\Documents\GitHub\SRGDamia1\SAMD-custom-board\fuses\jlink\SAMD21_clear_BOOTPROT.mot`
+  - for SAMD51: `loadfile C:\Users\sdamiano\Documents\GitHub\SRGDamia1\SAMD-custom-board\fuses\jlink\SAMD51_clear_BOOTPROT.mot`
 - Reset the target
   - `r`
 
@@ -184,14 +184,14 @@ This would be significantly better (though much more complex) than hard-writing 
 - Reset the target
   - `r`
 - Upload the bootloader file to address 0
-  - `loadbin "C:\Users\sdamiano\Documents\GitHub\EnviroDIY\SAMD-custom-board\build\current\bootloaders\stonefly_m4\bootloader-stonefly_m4-0.3.7-uf2v4.0.0.bin",0`
+  - `loadbin "C:\Users\sdamiano\Documents\GitHub\SRGDamia1\SAMD-custom-board\build\current\bootloaders\stonefly_m4\bootloader-stonefly_m4-0.3.7-uf2v4.0.0.bin",0`
 - Reset the target
   - `r`
 
 ### Re-Lock the BOOTPROT "fuses"
 
 - Load the memory file that will set the boot loader protection fuse to 8kb
-  - for SAMD21: `loadfile C:\Users\sdamiano\Documents\GitHub\EnviroDIY\SAMD-custom-board\fuses\jlink\SAMD21_set_BOOTPROT_8k.mot`
-  - for SAMD51: `loadfile C:\Users\sdamiano\Documents\GitHub\EnviroDIY\SAMD-custom-board\fuses\jlink\SAMD51_set_BOOTPROT_16k.mot`
+  - for SAMD21: `loadfile C:\Users\sdamiano\Documents\GitHub\SRGDamia1\SAMD-custom-board\fuses\jlink\SAMD21_set_BOOTPROT_8k.mot`
+  - for SAMD51: `loadfile C:\Users\sdamiano\Documents\GitHub\SRGDamia1\SAMD-custom-board\fuses\jlink\SAMD51_set_BOOTPROT_16k.mot`
 - Reset the target
   - `r`
