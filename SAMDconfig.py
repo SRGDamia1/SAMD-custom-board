@@ -77,7 +77,8 @@ def multikeysort(items, columns, functions={}, getter=i):
     return sorted(items, key=cmp_to_key(comparer))
 
 
-class SAMDConfig:
+# The class for a single board configuration
+class SAMDBoard:
     # constructor
     def __init__(self, filename):
         # dictionary containing all config data
@@ -89,10 +90,13 @@ class SAMDConfig:
         for s in ["hardware", "usb", "names"]:
             for key, value in config_file[s].items():
                 self.d[key] = value
-                if key == "board_define_name" and value == "":
-                    self.d["board_define_name"] = (
-                        self.d["board_name"].lower().replace(" ", "_")
-                    )
+
+        # Fill in missing values that are allowed to be blank based on other values
+        for key, value in self.d.items():
+            if key == "board_define_name" and value == "":
+                self.d["board_define_name"] = (
+                    self.d["board_name"].lower().replace(" ", "_")
+                )
 
         # now, read additional options for the bootloader
         self.extras = {}
@@ -341,12 +345,13 @@ class SAMDConfig:
                 print(f"Successfully built bootloader for {self.name}")
 
 
+# The class for the whole package, containing multiple board configurations
 class SAMDPackage:
     # constructor
     def __init__(self, dirname):
         print(f"Reading package config from {dirname}")
         self.config_directory = dirname
-        self.boards_config: list[SAMDConfig] = []
+        self.boards_config: list[SAMDBoard] = []
         # dictionary containing all config data
         self.d = {}
         self.d["build_date"] = date.today().isoformat()
@@ -356,10 +361,13 @@ class SAMDPackage:
         for s in ["vendor", "package", "paths"]:
             for key, value in config_file[s].items():
                 self.d[key] = value
-                if key == "package_define_name" and value == "":
-                    self.d["package_define_name"] = (
-                        self.d["package_name"].lower().replace(" ", "_")
-                    )
+
+        # Fill in missing values that are allowed to be blank based on other values
+        for key, value in self.d.items():
+            if key == "package_define_name" and value == "":
+                self.d["package_define_name"] = (
+                    self.d["package_name"].lower().replace(" ", "_")
+                )
 
         # check for empty values
         self.check_missing_values(self.d)
@@ -394,7 +402,7 @@ class SAMDPackage:
             print(f"Looking for board config at {board_config_path}")
             if os.path.isfile(board_config_path) and "EXAMPLE" not in board_config_path:
                 print(f"Reading config for board {board_dir}")
-                board_config = SAMDConfig(board_config_path)
+                board_config = SAMDBoard(board_config_path)
                 board_config.d["board_dir"] = os.path.join(
                     self.config_directory, board_dir
                 )
@@ -583,6 +591,7 @@ class SAMDPackage:
                     file_info["src_file"]
                     .replace("_TEMPLATE", "_" + board.name + "_TEMPLATE")
                     .replace("pio_board", self.d["vendor_name"])
+                    # .replace("pio_board_", "")
                 )
 
                 # make a **copy** of the template
@@ -810,7 +819,7 @@ class SAMDPackage:
         # see structure specifications here: https://arduino.github.io/arduino-cli/1.4/package_index_json-specification/
 
         # create the package structure
-        package = {
+        package_template = {
             "name": self.d["vendor_name_long"],
             "maintainer": self.d["maintainer_name"],
             "websiteURL": self.d["info_url"],
@@ -842,20 +851,20 @@ class SAMDPackage:
                 print(
                     f"No existing package index found at {self.d['package_index_url']}, creating a new one"
                 )
-                packages = {"packages": [copy.deepcopy(package)]}
+                packages = {"packages": [copy.deepcopy(package_template)]}
         else:
             print("No existing package index found, creating a new one")
-            packages = {"packages": [copy.deepcopy(package)]}
+            packages = {"packages": [copy.deepcopy(package_template)]}
 
         existing_platforms: list = []
         if "packages" in packages and len(packages["packages"]) > 0:
             existing_package = copy.deepcopy(packages["packages"][0])
             # verify that the basic package info matches the existing one if it exists
             if (
-                existing_package["name"] != package["name"]
-                or existing_package["maintainer"] != package["maintainer"]
-                or existing_package["websiteURL"] != package["websiteURL"]
-                or existing_package["email"] != package["email"]
+                existing_package["name"] != package_template["name"]
+                or existing_package["maintainer"] != package_template["maintainer"]
+                or existing_package["websiteURL"] != package_template["websiteURL"]
+                or existing_package["email"] != package_template["email"]
             ):
                 raise RuntimeError(
                     "Existing package index has different basic info (name, maintainer, websiteURL, or email). Please resolve this conflict before proceeding."
@@ -874,16 +883,17 @@ class SAMDPackage:
                         )
                         existing_platforms.pop(idx)
 
-        # let's create the current version of samd platform
+        # let's create the current version of our SAMD platform
         samd_current = {
             "name": self.d["package_name"],
             "architecture": "samd",
             "version": self.d["package_version"],
             "category": "Contributed",
+            "help": {"online": self.d["help_url"]},
             "url": self.d["package_archive_url"] + self.d["archive_filename"],
             "archiveFileName": self.d["archive_filename"],
             "checksum": "SHA-256:" + self.d["archive_checksum"],
-            "size": self.d["archive_size"],
+            "size": str(self.d["archive_size"]),
             "boards": [],
             "toolsDependencies": [],
         }
@@ -909,3 +919,7 @@ class SAMDPackage:
         # remove cloned repo
         if os.path.exists(f"{self.build_directory}/uf2-samdx1"):
             shutil.rmtree(f"{self.build_directory}/uf2-samdx1", onexc=remove_readonly)
+
+
+# cSpell:words hughdbrown esque DARDUINO onexc multikeysort mfloat mfpu
+# cSpell:words board_rgbled_data_pin board_rgbled_clock_pin larm_cortexM4lf_math
