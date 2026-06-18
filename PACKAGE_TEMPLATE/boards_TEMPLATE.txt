@@ -13,6 +13,7 @@ $board_name.upload.tool.default=bossac18
 $board_name.upload.tool.serial=bossac18
 $board_name.upload.protocol=sam-ba
 $board_name.upload.maximum_size=$flash_size
+$board_name.upload.maximum_data_size=$ram_size
 $board_name.upload.offset=$offset
 $board_name.upload.use_1200bps_touch=true
 $board_name.upload.wait_for_upload_port=true
