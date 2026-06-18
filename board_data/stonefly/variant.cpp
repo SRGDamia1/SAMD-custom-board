@@ -65,7 +65,7 @@ const PinDescription g_APinDescription[] =
         {PORTC, 28, PIO_DIGITAL, PIN_ATTR_DIGITAL, No_ADC_Channel, NOT_ON_PWM, NOT_ON_TIMER, EXTERNAL_INT_12}, // D13 LED Orange
 
         // 14..15 - UART Bee (Serial1)
-        {PORTB, 17, PIO_SERCOM, PIN_ATTR_PWM_E, No_ADC_Channel, TC6_CH1, TC6_CH1, EXTERNAL_INT_1}, // D14 UART1 Bee RX SERCOM5/PAD[1]
+        {PORTB, 17, PIO_SERCOM, PIN_ATTR_PWM_E, No_ADC_Channel, TC6_CH1, TC6_CH1, EXTERNAL_INT_1}, // D14 UART1 Bee Rx SERCOM5/PAD[1]
         {PORTB, 16, PIO_SERCOM, PIN_ATTR_PWM_E, No_ADC_Channel, TC6_CH0, TC6_CH0, EXTERNAL_INT_0}, // D15 UART1 Bee Tx SERCOM5/PAD[0]
 
         // 16..17 - I2C pins (SDA/SCL)
@@ -109,8 +109,8 @@ const PinDescription g_APinDescription[] =
         {PORTB, 14, PIO_SERCOM, PIN_ATTR_PWM_E, No_ADC_Channel, TC5_CH0, TC5_CH0, EXTERNAL_INT_14}, // D35 SPI0 (SD Card) SS/CS SERCOM4/PAD[2]
 
         // 36..37 - UART4 Feather Right (Serial4)
-        {PORTC, 17, PIO_SERCOM, PIN_ATTR_PWM_F, No_ADC_Channel, TCC0_CH1, TCC0_CH1, EXTERNAL_INT_1}, // D36 UART4 RX SERCOM6/PAD[1] (Feather Right)
-        {PORTC, 16, PIO_SERCOM, PIN_ATTR_PWM_F, No_ADC_Channel, TCC0_CH0, TCC0_CH0, EXTERNAL_INT_0}, // D37 UART4 TX SERCOM6/PAD[0] (Feather Right)
+        {PORTC, 17, PIO_SERCOM, PIN_ATTR_PWM_F, No_ADC_Channel, TCC0_CH1, TCC0_CH1, EXTERNAL_INT_1}, // D36 UART4 Rx SERCOM6/PAD[1] (Feather Right)
+        {PORTC, 16, PIO_SERCOM, PIN_ATTR_PWM_F, No_ADC_Channel, TCC0_CH0, TCC0_CH0, EXTERNAL_INT_0}, // D37 UART4 Tx SERCOM6/PAD[0] (Feather Right)
 
         // 38 - Feather Right Power Enable
         {PORTC, 3, PIO_DIGITAL, PIN_ATTR_DIGITAL, No_ADC_Channel, NOT_ON_PWM, NOT_ON_TIMER, EXTERNAL_INT_3}, // D38 GPIO Digital Power Enable Feather Right
@@ -123,7 +123,7 @@ const PinDescription g_APinDescription[] =
         {PORTA, 10, PIO_COM, PIN_ATTR_NONE, No_ADC_Channel, NOT_ON_PWM, NOT_ON_TIMER, EXTERNAL_INT_10}, // D43 QSPI (Flash) IO2
         {PORTA, 11, PIO_COM, PIN_ATTR_NONE, No_ADC_Channel, NOT_ON_PWM, NOT_ON_TIMER, EXTERNAL_INT_11}, // D44 QSPI (Flash) IO3
 
-        // 45..46 - RX/TX LEDS
+        // 45..46 - USB RX/TX LEDS
         {PORTB, 23, PIO_DIGITAL, PIN_ATTR_PWM_E, No_ADC_Channel, TC7_CH1, TC7_CH1, EXTERNAL_INT_7},         // D45 LED RX, used as output only
         {PORTB, 24, PIO_DIGITAL, PIN_ATTR_PWM_G, No_ADC_Channel, NOT_ON_PWM, NOT_ON_TIMER, EXTERNAL_INT_8}, // D46 LED TX, used as output only
 
@@ -151,8 +151,8 @@ const PinDescription g_APinDescription[] =
         {PORTC, 15, PIO_SERCOM, PIN_ATTR_PWM_F, No_ADC_Channel, TCC0_CH5, TCC0_CH5, EXTERNAL_INT_15},         // D63 GPIO Digital (SERCOM7/PAD[3])
 
         // 64..65 - UART3 Feather Left
-        {PORTA, 13, PIO_SERCOM, PIN_ATTR_PWM_E, No_ADC_Channel, TC2_CH1, TC2_CH1, EXTERNAL_INT_13}, // D64 UART3 RX SERCOM2/PAD[1]
-        {PORTA, 12, PIO_SERCOM, PIN_ATTR_PWM_E, No_ADC_Channel, TC2_CH0, TC2_CH0, EXTERNAL_INT_12}, // D65 UART3 TX SERCOM2/PAD[0]
+        {PORTA, 13, PIO_SERCOM, PIN_ATTR_PWM_E, No_ADC_Channel, TC2_CH1, TC2_CH1, EXTERNAL_INT_13}, // D64 UART3 Rx SERCOM2/PAD[1]
+        {PORTA, 12, PIO_SERCOM, PIN_ATTR_PWM_E, No_ADC_Channel, TC2_CH0, TC2_CH0, EXTERNAL_INT_12}, // D65 UART3 Tx SERCOM2/PAD[0]
 
         // 66..76 - Analog pins
         {PORTA, 2, PIO_ANALOG, PIN_ATTR_ANALOG, ADC_Channel0, NOT_ON_PWM, NOT_ON_TIMER, EXTERNAL_INT_2},            // D66 GPIO Analog (DAC, ADC)
@@ -172,10 +172,9 @@ const PinDescription g_APinDescription[] =
         {PORTA, 25, PIO_COM, PIN_ATTR_NONE, No_ADC_Channel, NOT_ON_PWM, NOT_ON_TIMER, EXTERNAL_INT_9},             // D78 USB D+
         {NOT_A_PORT, 0, PIO_NOT_A_PIN, PIN_ATTR_NONE, No_ADC_Channel, NOT_ON_PWM, NOT_ON_TIMER, NOT_AN_INTERRUPT}, // D79 USB Host enable
 
-        // 80..81 - Alternate use of A9 and A7 (DAC output)
-        {PORTA, 2, PIO_ANALOG, PIN_ATTR_ANALOG, ADC_Channel0, NOT_ON_PWM, NOT_ON_TIMER, EXTERNAL_INT_2},            // D80 GPIO Analog (DAC, ADC)
-        {PORTA, 5, PIO_ANALOG, (PIN_ATTR_ANALOG | PIN_ATTR_PWM_E), ADC_Channel5, TC0_CH1, TC0_CH1, EXTERNAL_INT_5}, // D81 GPIO Analog (DAC, ADC, PWM)
-
+        // 80..81 - VIRTUAL PINS - Alternate use of A0/D66 and A1/D67 as DAC output
+        {PORTA, 2, PIO_ANALOG, PIN_ATTR_ANALOG, DAC_Channel0, NOT_ON_PWM, NOT_ON_TIMER, EXTERNAL_INT_2},            // D80 GPIO Analog (DAC, ADC)
+        {PORTA, 5, PIO_ANALOG, (PIN_ATTR_ANALOG | PIN_ATTR_PWM_E), DAC_Channel1, TC0_CH1, TC0_CH1, EXTERNAL_INT_5}, // D81 GPIO Analog (DAC, ADC, PWM)
 };
 
 /**
@@ -207,7 +206,7 @@ SERCOM sercom7(SERCOM7);
  * USART (Serial) objects instantiation and interrupt handler assignment
  *
  * Create a Uart object for each SERCOM that you want to use as a Serial port.
- * The constructor takes the SERCOM instance, the RX and TX pin numbers, the RX and TX pads, and optionally the RTS and CTS pin numbers (if using hardware flow control).
+ * The constructor takes the SERCOM instance, the Rx and Tx pin numbers, the Rx and Tx pads, and optionally the RTS and CTS pin numbers (if using hardware flow control).
  *
  * Then, create an interrupt handler for each SERCOM that calls the IrqHandler() method of the corresponding Uart object.
  */
