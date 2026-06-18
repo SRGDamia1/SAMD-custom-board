@@ -9,6 +9,8 @@ $board_name.pid.0=$usb_pid
 
 # Upload
 $board_name.upload.tool=bossac18
+$board_name.upload.tool.default=bossac18
+$board_name.upload.tool.serial=bossac18
 $board_name.upload.protocol=sam-ba
 $board_name.upload.maximum_size=$flash_size
 $board_name.upload.offset=$offset
