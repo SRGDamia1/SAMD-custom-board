@@ -31,6 +31,7 @@ compiler.warning_flags.default=-Werror=return-type
 compiler.warning_flags.more=-Wall -Werror=return-type -Wno-expansion-to-defined
 compiler.warning_flags.all=-Wall -Wextra -Werror=return-type -Wno-expansion-to-defined
 
+# Default "compiler.path" is correct, change only if you want to override the initial value
 compiler.path={runtime.tools.arm-none-eabi-gcc.path}/bin/
 compiler.c.cmd=arm-none-eabi-gcc
 compiler.c.flags=-mcpu={build.mcu} -mthumb -c -g -Os {compiler.warning_flags} -std=gnu11 -ffunction-sections -fdata-sections -nostdlib --param max-inline-insns-single=500 -MMD -D__SKETCH_NAME__="""{build.project_name}"""

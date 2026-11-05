@@ -5,12 +5,13 @@ Main class to keep configuration data for SAMD board
 """
 
 import os
+import subprocess
+from pathlib import Path
+import glob
 import copy
 import shutil
 import stat
 import configparser
-import subprocess
-import glob
 from string import Template
 import hashlib
 import json
@@ -75,6 +76,18 @@ def multikeysort(items, columns, functions={}, getter=i):
             return 0
 
     return sorted(items, key=cmp_to_key(comparer))
+
+
+def find_clang_format_style_file(start_dir: str) -> str | None:
+    current_dir = Path(start_dir).resolve()
+    while True:
+        style_file = current_dir / ".clang-format"
+        if style_file.exists():
+            return str(style_file)
+        if current_dir.parent == current_dir:
+            break
+        current_dir = current_dir.parent
+    return None
 
 
 # The class for a single board configuration
@@ -433,7 +446,14 @@ class SAMDPackage:
 
     # reads template file, does all substitutions from the dictionary, saves result as destination
     # source and destination should be filenames
-    def process_file(self, source, destination, sub_dict=None):
+    def process_file(
+        self,
+        source,
+        destination,
+        sub_dict=None,
+        format_file: bool = False,
+        delete_source: bool = True,
+    ):
         print(f"Processing template file {source} to create {destination}")
         if sub_dict is None:
             sub_dict = self.d
@@ -449,8 +469,37 @@ class SAMDPackage:
         with open(destination, "w", encoding="UTF-8") as dest_file:
             dest_file.write(new_data)
 
-        # delete the template file
-        os.remove(source)
+        # run clang-format on the generated file if requested
+        if format_file:
+            style_file = ".clang-format"
+            if (
+                Path(destination).suffix in [".c", ".cpp", ".h"]
+                and os.path.exists("C:\\Program Files\\LLVM\\bin\\clang-format.exe")
+                and os.path.exists(style_file)
+            ):
+                command_list = [
+                    "C:\\Program Files\\LLVM\\bin\\clang-format.exe",
+                    f"-style=file:{style_file}" if style_file else "-style=file",
+                    "-i",
+                    destination,
+                ]
+                print(
+                    f"\tCalling clang-format: {subprocess.list2cmdline(command_list)}"
+                )
+                subprocess.run(
+                    [
+                        "C:\\Program Files\\LLVM\\bin\\clang-format.exe",
+                        f"-style=file:{style_file}" if style_file else "-style=file",
+                        "-i",
+                        destination,
+                    ],
+                    capture_output=True,
+                )
+
+        # delete copied templates after processing, but preserve source templates
+        # that are intentionally rendered only after the package archive is built
+        if delete_source:
+            os.remove(source)
 
     def setup_build_directory(self):
         # directory for the built package
@@ -468,6 +517,16 @@ class SAMDPackage:
         # copy the template directory into the build directory
         print("Copying the template directory")
         shutil.copytree("PACKAGE_TEMPLATE", self.package_directory)
+
+        # Programming scripts contain machine-specific absolute paths. Keep their
+        # source templates out of build/current so neither the templates nor the
+        # generated scripts are included in the package archive.
+        programming_template_copy = os.path.join(
+            self.package_directory, "bootloaders", "bootloader_template"
+        )
+        if os.path.isdir(programming_template_copy):
+            print("Removing local programming templates from the package directory")
+            shutil.rmtree(programming_template_copy, onexc=remove_readonly)
 
         # select which fuse setting script to keep
         fuses_dir = self.package_directory + "/scripts/fuses"
@@ -639,6 +698,7 @@ class SAMDPackage:
                         file_name,
                         file_name.replace("_TEMPLATE", ""),
                         board.d | self.d,
+                        True,
                     )
 
         # delete the template files we made copies of instead of simply moving
@@ -689,6 +749,120 @@ class SAMDPackage:
             if os.path.isfile(file_name):
                 print(f"Processing template for {file_name}")
                 self.process_file(file_name, file_name.replace("_TEMPLATE", ""))
+
+    def find_openocd(self):
+        """Return the newest installed Arduino OpenOCD executable and script path."""
+        arduino15 = Path(self.d["arduino15"]).expanduser()
+        if not arduino15.is_absolute():
+            arduino15 = Path.home() / arduino15
+
+        openocd_root = arduino15 / "packages" / "arduino" / "tools" / "openocd"
+        executable_name = (
+            "openocd.exe" if self.d["build_os"].lower() == "windows" else "openocd"
+        )
+        installations = [
+            path
+            for path in openocd_root.iterdir()
+            if path.is_dir()
+            and (path / "bin" / executable_name).is_file()
+            and (path / "share" / "openocd" / "scripts").is_dir()
+        ] if openocd_root.is_dir() else []
+
+        if not installations:
+            raise RuntimeError(
+                f"Could not find an Arduino OpenOCD installation in {openocd_root}"
+            )
+
+        def version_key(path):
+            try:
+                return (Version(path.name.split("-")[0]), path.name)
+            except ValueError:
+                return (Version("0"), path.name)
+
+        installation = max(installations, key=version_key)
+        return (
+            installation / "bin" / executable_name,
+            installation / "share" / "openocd" / "scripts",
+        )
+
+    def write_bootloader_programming_scripts(self):
+        """Create local programming scripts after the distributable ZIP is built."""
+        template_directory = os.path.join(
+            "PACKAGE_TEMPLATE", "bootloaders", "bootloader_template"
+        )
+        template_files = [
+            "program_openocd_TEMPLATE.bat",
+            "program_jlink_TEMPLATE.bat",
+        ]
+        openocd_executable, openocd_scripts_directory = self.find_openocd()
+
+        for board in self.boards_config:
+            bootloader_directory = Path(self.package_directory) / "bootloaders" / board.name
+            bootloader_path = bootloader_directory / board.d["bootloader_filename"]
+            if not bootloader_path.is_file():
+                raise RuntimeError(f"Could not find built bootloader {bootloader_path}")
+
+            if board.chip_family == "SAMD21":
+                chip_family = "samd21"
+                bootprot_unlock = "0x7"
+                bootprot_lock = "0x2"
+                jlink_clear_fuses_name = "samd21_clear_BOOTPROT.mot"
+                jlink_set_fuses_name = "samd21_set_BOOTPROT_8k.mot"
+            else:
+                chip_family = "samd51"
+                bootprot_unlock = "0x0F"
+                bootprot_lock = "0x0D"
+                jlink_clear_fuses_name = "samd51_clear_BOOTPROT.mot"
+                jlink_set_fuses_name = "samd51_set_BOOTPROT_16k.mot"
+
+            package_directory = Path(self.package_directory).resolve()
+            substitutions = board.d | self.d | {
+                "bootprot_unlock": bootprot_unlock,
+                "bootprot_lock": bootprot_lock,
+                "openocd_executable": str(openocd_executable.resolve()),
+                "openocd_scripts_directory": str(openocd_scripts_directory.resolve()),
+                "openocd_fuse_script": str(
+                    package_directory
+                    / "scripts"
+                    / "fuses"
+                    / "openocd"
+                    / f"{chip_family}_fuses.tcl"
+                ),
+                "openocd_daplink_config": str(
+                    package_directory
+                    / "scripts"
+                    / "openocd"
+                    / f"daplink_samdx1_{board.name}.cfg"
+                ),
+                "jlink_clear_fuses": str(
+                    package_directory
+                    / "scripts"
+                    / "fuses"
+                    / "jlink"
+                    / jlink_clear_fuses_name
+                ),
+                "jlink_set_fuses": str(
+                    package_directory
+                    / "scripts"
+                    / "fuses"
+                    / "jlink"
+                    / jlink_set_fuses_name
+                ),
+                "bootloader_path_windows": str(bootloader_path.resolve()),
+                "bootloader_path_forward": bootloader_path.resolve().as_posix(),
+            }
+
+            for template_file in template_files:
+                source = os.path.join(template_directory, template_file)
+                destination = bootloader_directory / template_file.replace(
+                    "_TEMPLATE", ""
+                )
+                self.process_file(
+                    source,
+                    destination,
+                    substitutions,
+                    delete_source=False,
+                )
 
     def check_uf2_version(self):
         print("Checking the tag of the latest release of Adafruit's uf2 repo...")
@@ -921,5 +1095,5 @@ class SAMDPackage:
             shutil.rmtree(f"{self.build_directory}/uf2-samdx1", onexc=remove_readonly)
 
 
-# cSpell:words hughdbrown esque DARDUINO onexc multikeysort mfloat mfpu
-# cSpell:words board_rgbled_data_pin board_rgbled_clock_pin larm_cortexM4lf_math
+# cSpell:ignore hughdbrown esque DARDUINO onexc multikeysort mfloat mfpu
+# cSpell:ignore board_rgbled_data_pin board_rgbled_clock_pin larm_cortexM4lf_math
