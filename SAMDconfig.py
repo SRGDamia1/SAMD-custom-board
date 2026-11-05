@@ -5,12 +5,13 @@ Main class to keep configuration data for SAMD board
 """
 
 import os
+import subprocess
+from pathlib import Path
+import glob
 import copy
 import shutil
 import stat
 import configparser
-import subprocess
-import glob
 from string import Template
 import hashlib
 import json
@@ -75,6 +76,18 @@ def multikeysort(items, columns, functions={}, getter=i):
             return 0
 
     return sorted(items, key=cmp_to_key(comparer))
+
+
+def find_clang_format_style_file(start_dir: str) -> str | None:
+    current_dir = Path(start_dir).resolve()
+    while True:
+        style_file = current_dir / ".clang-format"
+        if style_file.exists():
+            return str(style_file)
+        if current_dir.parent == current_dir:
+            break
+        current_dir = current_dir.parent
+    return None
 
 
 # The class for a single board configuration
@@ -433,7 +446,9 @@ class SAMDPackage:
 
     # reads template file, does all substitutions from the dictionary, saves result as destination
     # source and destination should be filenames
-    def process_file(self, source, destination, sub_dict=None):
+    def process_file(
+        self, source, destination, sub_dict=None, format_file: bool = False
+    ):
         print(f"Processing template file {source} to create {destination}")
         if sub_dict is None:
             sub_dict = self.d
@@ -448,6 +463,33 @@ class SAMDPackage:
         # write the new file
         with open(destination, "w", encoding="UTF-8") as dest_file:
             dest_file.write(new_data)
+
+        # run clang-format on the generated file if requested
+        if format_file:
+            style_file = ".clang-format"
+            if (
+                Path(destination).suffix in [".c", ".cpp", ".h"]
+                and os.path.exists("C:\\Program Files\\LLVM\\bin\\clang-format.exe")
+                and os.path.exists(style_file)
+            ):
+                command_list = [
+                    "C:\\Program Files\\LLVM\\bin\\clang-format.exe",
+                    f"-style=file:{style_file}" if style_file else "-style=file",
+                    "-i",
+                    destination,
+                ]
+                print(
+                    f"\tCalling clang-format: {subprocess.list2cmdline(command_list)}"
+                )
+                subprocess.run(
+                    [
+                        "C:\\Program Files\\LLVM\\bin\\clang-format.exe",
+                        f"-style=file:{style_file}" if style_file else "-style=file",
+                        "-i",
+                        destination,
+                    ],
+                    capture_output=True,
+                )
 
         # delete the template file
         os.remove(source)
@@ -639,6 +681,7 @@ class SAMDPackage:
                         file_name,
                         file_name.replace("_TEMPLATE", ""),
                         board.d | self.d,
+                        True,
                     )
 
         # delete the template files we made copies of instead of simply moving
@@ -921,5 +964,5 @@ class SAMDPackage:
             shutil.rmtree(f"{self.build_directory}/uf2-samdx1", onexc=remove_readonly)
 
 
-# cSpell:words hughdbrown esque DARDUINO onexc multikeysort mfloat mfpu
-# cSpell:words board_rgbled_data_pin board_rgbled_clock_pin larm_cortexM4lf_math
+# cSpell:ignore hughdbrown esque DARDUINO onexc multikeysort mfloat mfpu
+# cSpell:ignore board_rgbled_data_pin board_rgbled_clock_pin larm_cortexM4lf_math
