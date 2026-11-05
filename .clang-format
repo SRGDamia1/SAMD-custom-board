@@ -10,7 +10,7 @@ UseTab: Never
 
 AlignAfterOpenBracket: Align
 AlignConsecutiveMacros: None
-AlignArrayOfStructures: Right
+AlignArrayOfStructures: None
 AlignConsecutiveAssignments:
   Enabled: true
   AcrossEmptyLines: false

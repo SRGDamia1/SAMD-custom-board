@@ -1,20 +1,6 @@
-/*
-  Copyright (c) 2014-2015 Arduino LLC.  All right reserved.
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 2.1 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-  See the GNU Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
-*/
+/**
+ * C++ file for your custom variant of the SAMD board
+ */
 
 #include "variant.h"
 
@@ -37,7 +23,7 @@
  */
 const PinDescription g_APinDescription[] =
     {
-        // 0/1 - SERCOM/UART (Serial1)
+        // 0..1 - SERCOM/UART (Serial1)
         {PORTA, 17, PIO_SERCOM, PIN_ATTR_PWM_E, No_ADC_Channel, TC2_CH1, TC2_CH1, EXTERNAL_INT_1}, // D0 UART2 Rx SERCOM1/PAD[1]
         {PORTA, 16, PIO_SERCOM, PIN_ATTR_PWM_E, No_ADC_Channel, TC2_CH0, TC2_CH0, EXTERNAL_INT_0}, // D1 UART2 Tx SERCOM1/PAD[0]
 
@@ -209,24 +195,23 @@ SERCOM sercom7(SERCOM7);
  * USART (Serial) objects instantiation and interrupt handler assignment
  *
  * Create a Uart object for each SERCOM that you want to use as a Serial port.
- * The constructor takes the SERCOM instance, the RX and TX pin numbers, the RX and TX
+ * The constructor takes the SERCOM instance, the Rx and Tx pin numbers, the Rx and Tx
  * pads, and optionally the RTS and CTS pin numbers (if using hardware flow control).
  *
  * Then, create an interrupt handler for each SERCOM that calls the IrqHandler() method
  * of the corresponding Uart object.
+ *
+ * Arguments for the Uart constructor:
+ * Uart(SERCOM *_s, uint8_t _pinRX, uint8_t _pinTX, SercomRXPad _padRX, SercomUartTXPad
+ *      _padTX);
+ * Arguments for the Uart constructor with RTS and CTS pins:
+ * Uart(SERCOM *_s, uint8_t _pinRX, uint8_t _pinTX, SercomRXPad _padRX, SercomUartTXPad
+ *      _padTX, uint8_t _pinRTS, uint8_t _pinCTS);
  */
 
 // Serial1 [SERCOM5]
-// Arguments for the Uart constructor:
-// Uart(SERCOM *_s, uint8_t _pinRX, uint8_t _pinTX, SercomRXPad _padRX, SercomUartTXPad
-//      _padTX);
-
-// Arguments for the Uart constructor with RTS and CTS pins:
-// Uart(SERCOM *_s, uint8_t _pinRX, uint8_t _pinTX, SercomRXPad _padRX, SercomUartTXPad
-//      _padTX, uint8_t _pinRTS, uint8_t _pinCTS);
 Uart Serial1(&SERCOM_SERIAL1, PIN_SERIAL1_RX, PIN_SERIAL1_TX, PAD_SERIAL1_RX,
              PAD_SERIAL1_TX);
-
 void SERCOM5_0_Handler() {
     Serial1.IrqHandler();
 }

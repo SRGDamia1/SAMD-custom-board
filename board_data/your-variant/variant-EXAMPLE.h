@@ -1,20 +1,6 @@
-/*
-  Copyright (c) 2014-2015 Arduino LLC.  All right reserved.
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 2.1 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-  See the GNU Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
-*/
+/**
+ * Header file for your custom variant of the SAMD board
+ */
 
 // clang-format off
 #ifndef _VARIANT_YOUR_VARIANT_
@@ -191,8 +177,11 @@ extern "C" {
  *
  * The UART Objects themselves are created in variant.cpp using one of two constructors
  *
+ * The 'standard' UART constructor:
  * `Uart(SERCOM *_s, uint8_t _pinRX, uint8_t _pinTX, SercomRXPad _padRX, SercomUartTXPad
- * _padTX);` `Uart(SERCOM *_s, uint8_t _pinRX, uint8_t _pinTX, SercomRXPad _padRX,
+ * _padTX);`
+ * The UART constructor with RTS and CTS pins:
+ * `Uart(SERCOM *_s, uint8_t _pinRX, uint8_t _pinTX, SercomRXPad _padRX,
  * SercomUartTXPad _padTX, uint8_t _pinRTS, uint8_t _pinCTS);`
  *
  * Rx Pad (`_padRX`) can be any pad (0-3) [CTLA.RXPO]
@@ -329,9 +318,9 @@ extern "C" {
 #define SDCARD_SS_PIN PIN_SPI_SS
 
 // Other pins
-#define PIN_ATN \
-    (PIN_SPI_SS)  // Default Chip Select for SPI (See
-                  // https://forum.arduino.cc/t/whats-the-purpose-of-the-new-atn-pin/318278)
+#define PIN_ATN (PIN_SPI_SS)
+    // ^ Default Chip Select for SPI (See
+    // https://forum.arduino.cc/t/whats-the-purpose-of-the-new-atn-pin/318278)
     static const uint8_t ATN = PIN_ATN;
 
 /**
@@ -383,9 +372,9 @@ extern "C" {
  * #define PIN_USB_DP (#)          // USB data plus
  * ```
  */
-#define PIN_USB_HOST_ENABLE \
-    (79)  // This must be defined, even if it is not used on your board, to avoid
-          // compilation errors.
+#define PIN_USB_HOST_ENABLE (79)
+    // ^ This must be defined, even if it is not used on your board, to avoid
+    // compilation errors.
 #define PIN_USB_DM (77)  // PA24
 #define PIN_USB_DP (78)  // PA25
 
@@ -421,7 +410,7 @@ extern "C" {
 
 #if !defined(VARIANT_QSPI_BAUD_DEFAULT)
 // TODO: meaningful value for this
-#define VARIANT_QSPI_BAUD_DEFAULT 5000000
+#define VARIANT_QSPI_BAUD_DEFAULT 8000000
 #endif
 
 /**
@@ -472,6 +461,7 @@ extern SERCOM sercom2;
 extern SERCOM sercom3;
 extern SERCOM sercom4;
 extern SERCOM sercom5;
+// Comment out the SERCOMs below for the SAMD21, which only has 6 SERCOMs
 extern SERCOM sercom6;
 extern SERCOM sercom7;
 
