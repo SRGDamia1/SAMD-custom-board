@@ -94,6 +94,11 @@ for board in package.boards_config:
 print("\nCompressing the package archive")
 package.package_archive()
 
+# Create local, machine-specific programming scripts only after the distributable
+# package is archived so the scripts are available in build/current but not the ZIP.
+print("\nCreating local bootloader programming scripts")
+package.write_bootloader_programming_scripts()
+
 # create json file
 print("\nCreating json index file")
 package.write_index_json()

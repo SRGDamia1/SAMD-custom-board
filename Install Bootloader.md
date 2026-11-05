@@ -1,10 +1,19 @@
 # Installing your newly built bootloader
 
-Here are two different sets of instructions for installing the bootloader onto a SAMD device using either OpenOCD and a DAPLink Device or a J-Link Edu Mini and J-Flash Lite.
+Here are two different sets of instructions for installing the bootloader onto a SAMD device using either OpenOCD and a DAPLink Device or a J-Link Edu Mini and J-Link Commander.
 
 These paths are written for windows.
 You should change your username in the path from `{user}` to your own user directory and `{repo_path}` and `{repo_path_r}` to wherever you have this repo installed.
 The `{repo_path_r}` has reversed slashes.
+
+Each time `makeboard.py` builds the bootloaders, it also creates two local programming scripts for each board:
+
+- `{repo_path}\build\current\bootloaders\{board_name}\program_openocd.bat`
+- `{repo_path}\build\current\bootloaders\{board_name}\program_jlink.bat`
+
+The scripts contain the exact board name, board version, UF2 version, fuse files, and absolute paths for that build.
+They are created after the distributable package is zipped, so they remain in `build\current` but are not included in the package archive.
+Rebuild the bootloader before using a script if the repository or build directory has moved.
 
 ## Fuses and Bootloader Protection
 
@@ -37,6 +46,23 @@ The OpenOCD script for the fuses on the SAMD21 is a lightly modified and heavily
 The OpenOCD script from the fuses on the SAMD51 started with the SAMD21 script, but had to be re-written almost completely to account for the larger user pages and the fact that individual 32-bit registers cannot be written, only entire 512 byte pages.
 
 ## Install the Bootloader with OpenOCD and a DAPLink Device (ie, Particle Debugger)
+
+### Run the Generated OpenOCD Batch Script
+
+- Connect the DAPLink device to both your PC and your target board.
+- Power your target board.
+- Review the generated script to confirm that its board, bootloader filename, and paths match the device you intend to program.
+- Run the script from PowerShell:
+  - `& "{repo_path}\build\current\bootloaders\{board_name}\program_openocd.bat"`
+- Or run it from Command Prompt:
+  - `"{repo_path}\build\current\bootloaders\{board_name}\program_openocd.bat"`
+
+The batch script uses the OpenOCD installation detected by `SAMDconfig.py` when the bootloader was built.
+It runs the supported multi-step sequence described below: unlock BOOTPROT, erase and program the exact versioned bootloader, verify it, and re-lock BOOTPROT.
+It does **not** use the buggy all-in-one OpenOCD `bootloader` command.
+The script stops immediately if any OpenOCD command fails; if it stops before the last step, BOOTPROT may still be unlocked.
+
+The following sections explain the individual commands and can also be used to run the procedure manually.
 
 ### Start up Open OCD
 
@@ -78,14 +104,14 @@ Explanation of Command/Arguments:
 ### Write the Bootloader
 
 - Run OpenOCD with these commands to program the board
-  - ```./openocd -d2 -s ..\share\openocd\scripts\ -f "{repo_path}\build\current\scripts\openocd\daplink_samdx1.cfg" -c "telnet_port disabled; init; reset halt; `$_FLASHDRIVER chip-erase; program {repo_path_r}/build/current/bootloaders/{board_name}/bootloader-{board_name}-{board_version}-{uf2_version}.bin verify reset; shutdown"```
+  - ```./openocd -d2 -s ..\share\openocd\scripts\ -f "{repo_path}\build\current\scripts\openocd\daplink_samdx1_{board_name}.cfg" -c "telnet_port disabled; init; reset halt; `$_FLASHDRIVER chip-erase; program {repo_path_r}/build/current/bootloaders/{board_name}/bootloader-{board_name}-{board_version}-{uf2_version}.bin verify reset; shutdown"```
 
 Explanation of Command/Arguments:
 
 - `./openocd` runs OpenoCD
 - `-d2` sets the debugging level to 2
 - `-s ..\share\openocd\scripts\` sets the directory to search for config files and scripts
-- `-f "..\scripts\openocd\daplink_samdx1.cfg"` runs the configuration setup for DAPLink connection to the board
+- `-f "{repo_path}\build\current\scripts\openocd\daplink_samdx1_{board_name}.cfg"` runs the board-specific configuration setup for the DAPLink connection
 - `-c ... runs the commands to program the board
   - `telnet_port disabled` temporarily disables telnet communication with OpenOCD while we're programming
   - `init` initializes OpenOCD and the TCL language
@@ -143,7 +169,7 @@ Explanation of Command/Arguments:
     - NOTE: To run this command on Windows, you must escape the `$`  in the command by adding an extra backtick (`)
   - `shutdown` shuts down OpenOCD
 
-## Install the Bootloader with J-Link Edu Mini and J-Flash Lite
+## Install the Bootloader with J-Link Edu Mini and J-Link Commander
 
 See [Tom Magnier's HACKADAY.IO instructions for SAMD bootloaders](https://hackaday.io/page/5997-programming-a-samd-bootloader-using-jlink-linux) for a walk-through with screenshots. That page is the primary source for these instructions
 
@@ -151,10 +177,11 @@ WARNING: Using this procedure will reset all fuses to their default values!  If 
 
 TODO: It should be possible to make a J-Link script to read and write the fuses as is done in the OpenOCD method.
 This would be significantly better (though much more complex) than hard-writing a "mot" memory file with the factory settings for the user words/user pages.
+The generated batch script automates the existing `.mot` file procedure; it does not preserve customized fuse values.
 
 ### Install J-Link Software Package
 
-- Install the J-Link software package, including J-Flash Lite from <https://www.segger.com/downloads/jlink/>
+- Install the J-Link software package, including J-Link Commander (`JLink.exe`) and J-Flash Lite, from <https://www.segger.com/downloads/jlink/>
 - Connect the J-Link Edu Mini device to your PC
 - If desired, update the firmware on your J-Link by using the J-Link Configurator program
 
@@ -162,7 +189,24 @@ This would be significantly better (though much more complex) than hard-writing 
   - Make sure that the JTAG cable is connected so that the red wire is at the top near where the "1" is printed on the J-Link Edu Mini.  The cable can connect either way (stupid design) so you need to make sure it's connected correctly.
 - Power your target board
 
-### Connect J-Link to Target
+### Run the Generated J-Link Batch Script
+
+- Review the generated script to confirm that its chip, board, bootloader filename, and paths match the device you intend to program.
+- Ensure that `JLink.exe` is available on `PATH`, or set `JLINK_EXE` to its full path before running the script.
+  - PowerShell example: `$env:JLINK_EXE = "C:\path\to\JLink.exe"`
+  - Command Prompt example: `set "JLINK_EXE=C:\path\to\JLink.exe"`
+- Run the script from PowerShell:
+  - `& "{repo_path}\build\current\bootloaders\{board_name}\program_jlink.bat"`
+- Or run it from Command Prompt:
+  - `"{repo_path}\build\current\bootloaders\{board_name}\program_jlink.bat"`
+
+The batch script starts J-Link Commander in non-interactive mode with the correct chip, SWD interface, and interface speed.
+It clears BOOTPROT with the appropriate `.mot` file, resets and erases the device, programs and verifies the exact versioned bootloader, and restores the appropriate bootloader protection.
+The temporary J-Link command file is deleted when Commander exits.
+
+The following sections explain the individual commands and can also be used to run the procedure manually.
+
+### Connect J-Link to Target Manually
 
 - Start JLink.exe
 - Connect to the micro-controller. You have to specify the device type, SWD interface and you can use the default interface speed.
@@ -174,8 +218,8 @@ This would be significantly better (though much more complex) than hard-writing 
 ### Unlock the BOOTPROT "fuses"
 
 - Load the memory file that will clear the boot loader protection fuse
-  - for SAMD21: `loadfile {repo_path}\fuses\jlink\SAMD21_clear_BOOTPROT.mot`
-  - for SAMD51: `loadfile {repo_path}\fuses\jlink\SAMD51_clear_BOOTPROT.mot`
+  - for SAMD21: `loadfile {repo_path}\build\current\scripts\fuses\jlink\samd21_clear_BOOTPROT.mot`
+  - for SAMD51: `loadfile {repo_path}\build\current\scripts\fuses\jlink\samd51_clear_BOOTPROT.mot`
 - Reset the target
   - `r`
 
@@ -186,14 +230,14 @@ This would be significantly better (though much more complex) than hard-writing 
 - Reset the target
   - `r`
 - Upload the bootloader file to address 0
-  - `loadbin "{repo_path}\build\current\bootloaders\{board_name}\bootloader-{board_name}-{board_version}-{uf2_version}.bin",0`
+  - `loadfile "{repo_path}\build\current\bootloaders\{board_name}\bootloader-{board_name}-{board_version}-{uf2_version}.bin" 0`
 - Reset the target
   - `r`
 
 ### Re-Lock the BOOTPROT "fuses"
 
-- Load the memory file that will set the boot loader protection fuse to 8kb
-  - for SAMD21: `loadfile {repo_path}\fuses\jlink\SAMD21_set_BOOTPROT_8k.mot`
-  - for SAMD51: `loadfile {repo_path}\fuses\jlink\SAMD51_set_BOOTPROT_16k.mot`
+- Load the memory file that will set the boot loader protection fuse to the correct bootloader size
+  - for SAMD21: `loadfile {repo_path}\build\current\scripts\fuses\jlink\samd21_set_BOOTPROT_8k.mot`
+  - for SAMD51: `loadfile {repo_path}\build\current\scripts\fuses\jlink\samd51_set_BOOTPROT_16k.mot`
 - Reset the target
   - `r`
