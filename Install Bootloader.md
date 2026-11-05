@@ -241,3 +241,5 @@ The following sections explain the individual commands and can also be used to r
   - for SAMD51: `loadfile {repo_path}\build\current\scripts\fuses\jlink\samd51_set_BOOTPROT_16k.mot`
 - Reset the target
   - `r`
+
+<!-- cSpell:ignore makeboard nvmctrl forceupdate flashdriver Configurator -->
