@@ -18,6 +18,7 @@
 
 #include "variant.h"
 
+// clang-format off
 /**
  * Pin descriptions
  *
@@ -173,15 +174,20 @@ const PinDescription g_APinDescription[] =
         {PORTA, 5, PIO_ANALOG, (PIN_ATTR_ANALOG | PIN_ATTR_PWM_E), ADC_Channel5, TC0_CH1, TC0_CH1, EXTERNAL_INT_5}, // D81 GPIO Analog (DAC, ADC, PWM)
 
 };
+// clang-format on
 
 /**
  * Timer/counter instances list and generic clock instances list
  */
 
 // Timer/counter instances list (you shouldn't need to change it)
-const void *g_apTCInstances[TCC_INST_NUM + TC_INST_NUM] = {TCC0, TCC1, TCC2, TCC3, TCC4, TC0, TC1, TC2, TC3, TC4, TC5, TC6, TC7};
+const void* g_apTCInstances[TCC_INST_NUM + TC_INST_NUM] = {
+    TCC0, TCC1, TCC2, TCC3, TCC4, TC0, TC1, TC2, TC3, TC4, TC5, TC6, TC7};
 // generic clock instances list (you shouldn't need to change it)
-const uint32_t GCLK_CLKCTRL_IDs[TCC_INST_NUM + TC_INST_NUM] = {TCC0_GCLK_ID, TCC1_GCLK_ID, TCC2_GCLK_ID, TCC3_GCLK_ID, TCC4_GCLK_ID, TC0_GCLK_ID, TC1_GCLK_ID, TC2_GCLK_ID, TC3_GCLK_ID, TC4_GCLK_ID, TC5_GCLK_ID, TC6_GCLK_ID, TC7_GCLK_ID};
+const uint32_t GCLK_CLKCTRL_IDs[TCC_INST_NUM + TC_INST_NUM] = {
+    TCC0_GCLK_ID, TCC1_GCLK_ID, TCC2_GCLK_ID, TCC3_GCLK_ID, TCC4_GCLK_ID,
+    TC0_GCLK_ID,  TC1_GCLK_ID,  TC2_GCLK_ID,  TC3_GCLK_ID,  TC4_GCLK_ID,
+    TC5_GCLK_ID,  TC6_GCLK_ID,  TC7_GCLK_ID};
 
 /**
  * SERCOM instances
@@ -203,29 +209,33 @@ SERCOM sercom7(SERCOM7);
  * USART (Serial) objects instantiation and interrupt handler assignment
  *
  * Create a Uart object for each SERCOM that you want to use as a Serial port.
- * The constructor takes the SERCOM instance, the RX and TX pin numbers, the RX and TX pads, and optionally the RTS and CTS pin numbers (if using hardware flow control).
+ * The constructor takes the SERCOM instance, the RX and TX pin numbers, the RX and TX
+ * pads, and optionally the RTS and CTS pin numbers (if using hardware flow control).
  *
- * Then, create an interrupt handler for each SERCOM that calls the IrqHandler() method of the corresponding Uart object.
+ * Then, create an interrupt handler for each SERCOM that calls the IrqHandler() method
+ * of the corresponding Uart object.
  */
 
 // Serial1 [SERCOM5]
-// Uart(SERCOM *_s, uint8_t _pinRX, uint8_t _pinTX, SercomRXPad _padRX, SercomUartTXPad _padTX);
-// Uart(SERCOM *_s, uint8_t _pinRX, uint8_t _pinTX, SercomRXPad _padRX, SercomUartTXPad _padTX, uint8_t _pinRTS, uint8_t _pinCTS);
-Uart Serial1(&SERCOM_SERIAL1, PIN_SERIAL1_RX, PIN_SERIAL1_TX, PAD_SERIAL1_RX, PAD_SERIAL1_TX);
+// Arguments for the Uart constructor:
+// Uart(SERCOM *_s, uint8_t _pinRX, uint8_t _pinTX, SercomRXPad _padRX, SercomUartTXPad
+//      _padTX);
 
-void SERCOM5_0_Handler()
-{
+// Arguments for the Uart constructor with RTS and CTS pins:
+// Uart(SERCOM *_s, uint8_t _pinRX, uint8_t _pinTX, SercomRXPad _padRX, SercomUartTXPad
+//      _padTX, uint8_t _pinRTS, uint8_t _pinCTS);
+Uart Serial1(&SERCOM_SERIAL1, PIN_SERIAL1_RX, PIN_SERIAL1_TX, PAD_SERIAL1_RX,
+             PAD_SERIAL1_TX);
+
+void SERCOM5_0_Handler() {
     Serial1.IrqHandler();
 }
-void SERCOM5_1_Handler()
-{
+void SERCOM5_1_Handler() {
     Serial1.IrqHandler();
 }
-void SERCOM5_2_Handler()
-{
+void SERCOM5_2_Handler() {
     Serial1.IrqHandler();
 }
-void SERCOM5_3_Handler()
-{
+void SERCOM5_3_Handler() {
     Serial1.IrqHandler();
 }
