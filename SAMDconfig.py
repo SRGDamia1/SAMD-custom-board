@@ -613,6 +613,18 @@ class SAMDPackage:
     # creates platform.txt, version and README.md files, by processing template files in package directory
     # these are used by the Arduino IDE
     def write_platform_templates(self):
+        self.d["board_list"] = "\n".join(
+            [
+                "| Board | Version | Chip variant | `BOARD_DEFINE_NAME` |",
+                "| --- | --- | --- | --- |",
+            ]
+            + [
+                f"| {board.d['board_name_long']} | {board.board_version} | "
+                f"{board.chip_variant} | `{board.d['board_define_name']}` |"
+                for board in self.boards_config
+            ]
+        )
+
         # create template sub-directories for each board and copy the relevant template files into them
         board_files_to_copy = [
             {
